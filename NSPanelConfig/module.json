@@ -1,0 +1,16 @@
+{
+    "id": "{60160581-6E5D-B2F6-9DD7-C8EAC0C7B878}",
+    "name": "NSPanelConfig",
+    "type": 3,
+    "vendor": "Sonoff",
+    "aliases": [],
+    "parentRequirements": [
+        "{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}"
+    ],
+    "childRequirements": [],
+    "implemented": [
+        "{018EF6B5-AB94-40C6-AA53-46943E824ACF}"
+    ],
+    "prefix": "DBNSP",
+    "url": ""
+}
