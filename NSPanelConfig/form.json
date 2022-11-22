@@ -1,16 +1,262 @@
 {
-    "elements": [],
-    "actions": [
+    "elements": [
         {
-            "name": "Text",
             "type": "ValidationTextBox",
-            "caption": "Text"
+            "name": "topic",
+            "caption": "MQTT Topic"
         },
         {
-            "type": "Button",
-            "caption": "Send",
-            "onClick": "DBNSP_Send($id, $Text);"
+            "type": "ExpansionPanel",
+            "caption": "Screensaver",
+                "items": [   
+                {
+                    "type": "ValidationTextBox",
+                    "name": "sc_dimMode",
+                    "caption": "Screensaver DimMode"
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "sc_timeout",
+                    "caption": "Screensaver Timeout"
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "sc_active",
+                    "caption": "Screensaver activate"
+                }
+            ]
+        },
+        {
+            "type": "List",
+            "name": "panelPageConf",
+            "caption": "Seitendefinition",
+            "add": true,
+            "delete": true,
+            "columns": [
+                {
+                    "caption": "ID",
+                    "name": "id",
+                    "width": "90px",
+                    "add" : "",
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "minimum": 0,
+                        "maximum": 9999
+                    }
+                },
+                {
+                    "caption": "main",
+                    "name": "main",
+                    "width": "90px",
+                    "add" : "",
+                    "edit": {
+                        "type": "ValidationTextBox",
+                        "validate": "^[0-9]{0,4}$"
+                    }
+                },
+                {
+                    "caption": "return",
+                    "name": "return",
+                    "width": "90px",
+                    "add" : "",
+                    "edit": {
+                        "type": "ValidationTextBox",
+                        "validate": "^[0-9]{0,4}$"
+                    }
+                },          
+                {
+                    "caption": "type",
+                    "name": "type",
+                    "width": "200px",
+                    "add" : "",
+                    "edit": {
+                        "type": "ValidationTextBox"
+                    }
+                },
+                {
+                    "caption": "entry",
+                    "name": "entry",
+                    "width": "800px",
+                    "add" : "",
+                    "edit": {
+                        "type": "ValidationTextBox",
+                        "width": "1800px"
+                    }
+                }          
+         
+            ]
+        },
+        {
+            "type": "List",
+            "name": "panelPageValuesArray",
+            "caption": "Wertzuweisung",
+            "rowCount": 5,
+            "add": true,
+            "delete": true,
+            "columns": [
+                {
+                    "caption": "Seite",
+                    "name": "panelPage",
+                    "width": "50px",
+                    "visible": true,
+                    "add" : "0",
+                    "edit" : {
+                        "type": "Select",
+                        "width" : "200px",
+                        "options" : [
+                        ] ,
+                        "onChange" : "DBNSP_LoadPageColumns($id,$panelPage);"
+    
+                    }
+
+                },
+                {
+                    "caption": "Variablenverknüpfung",
+                    "name": "panelPageValues",
+                    "width": "350px",
+                    "visible": false,
+                    "add": "",
+                    "edit": {
+                        "type": "List",
+                        "enabled": true,
+                        "visible": true,
+                        "rowCount": 4,
+                        "add": true,
+                        "delete": true,
+                        "columns": [
+                            {
+                                "caption": "Variable",
+                                "name": "objectId",
+                                "width": "300px",
+                                "add": 0,
+                                "edit": {
+                                    "type": "SelectVariable"
+                                }
+                            },
+                            {
+                                "caption": "Ergebnisspalte",
+                                "name": "resultField",
+                                "width": "300px",
+                                "add": 0,
+                                "edit": {
+                                    "type": "Select",
+                                    "options" : [
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+
+
+         {
+            "type" :"CheckBox", 
+            "name": "PropertyVariableDebug", 
+            "caption": "Debug" 
         }
     ],
+    "actions": [
+        {
+            "type": "ExpansionPanel",
+            "caption": "ListHelper",
+                "items": [   
+                    {
+                        "type": "List",
+                        "name": "showPageColumns",
+                        "caption": "Spalten",
+                        "rowCount": "1",
+                        "columns": [
+                            {
+                                "caption": "ID",
+                                "name": "id",
+                                "width": "90px"
+                            },
+                            {
+                                "caption": "ID2",
+                                "name": "id2",
+                                "width": "90px"
+                            }
+                        ]
+                    },
+                    {
+                        "type" : "Select", 
+                        "name" : "showPage",
+                        "width" : "75px", 
+                        "caption" : "Seite",
+                        "options" : [
+                        ],
+                        "onChange" : "DBNSP_LoadEntry($id,$showPage);"
+                    }
+    
+            ]
+        },
+        {
+            "type" : "RowLayout",
+            "items" : [
+                {
+                    "type": "Button",
+                    "caption": "Send",
+                    "onClick": "DBNSP_Send($id, $Text);"
+                },
+                {
+                    "name": "Text",
+                    "type": "ValidationTextBox",
+                    "width": "1500px", 
+                    "caption": "Text"
+                }
+            ]
+        },
+        {
+            "type" : "RowLayout",
+            "items" : [
+                {
+                    "type": "Button",
+                    "caption": "Send",
+                    "onClick": "DBNSP_Send1($id,$Text2);"
+                },
+                {
+                    "name": "Text2",
+                    "type": "ValidationTextBox",
+                    "width": "1500px", 
+                    "caption": "Text"
+                }
+            ]
+        },
+        {
+            "type" : "RowLayout",
+            "items" : [
+                {
+                    "type": "Button",
+                    "caption": "Save",
+                    "name" : "save",
+                    "onClick": "DBNSP_Save($id);",
+                    "enabled" : true
+                },
+                {
+                    "type": "Button",
+                    "caption": "Load",
+                    "onClick": "DBNSP_Load($id,$loadConfig);"
+                },
+                {
+                    "type": "Select",
+                    "name": "loadConfig",
+                    "caption" : "Lade Konfiguration",
+                    "width": "150px",
+                        "options" : [
+                        ]
+                }
+            ]
+        },
+        {
+            "type":"CheckBox",
+            "name":"activated",
+            "caption":"activated",
+            "value":false,
+            "onChange" : "DBNSP_SwapModuleStatus($id);"
+        }
+
+],
     "status": []
 }

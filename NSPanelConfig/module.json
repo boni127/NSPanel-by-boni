@@ -5,12 +5,12 @@
     "vendor": "Sonoff",
     "aliases": [],
     "parentRequirements": [
-        "{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}"
+        "{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}"
     ],
     "childRequirements": [],
     "implemented": [
-        "{018EF6B5-AB94-40C6-AA53-46943E824ACF}"
+        "{7F7632D9-FA40-4F38-8DEA-C83CD4325A32}"
     ],
     "prefix": "DBNSP",
-    "url": ""
+    "url": "http://gazoo.fritz.box:~/Symcon/nspanel-by-boni.git"
 }
