@@ -28,6 +28,7 @@ declare(strict_types=1);
 //			$this->RegisterAttributeInteger('currentLayer',-1);    # Ebene, auf die mit exit zurückgekehrt wird, -1: Hauptebene
 			$this->RegisterAttributeInteger('lastPage',-1);     # die zuvor dargestellte Seite
 			$this->RegisterAttributeString('panelPage','{}');   # Seitendefinition interne Nutzung
+			$this->RegisterAttributeString('varAssignment','{}'); # Wertzuweisung der einzelnen Seiten, interne Nutzung
 			$this->RegisterPropertyString('panelPageConf','{}');   # Seitendefinition im Formular
 			$this->RegisterPropertyString('panelPageValuesArray','{}'); # Wertzuweisung der einzelnen Seiten
 //			$this->RegisterPropertyString('Devices','');
@@ -65,11 +66,36 @@ declare(strict_types=1);
 				$panelPageDst[$element['id']]['payload'][] =  $element['entry'];
 			}
 
+			// Wert aus der Zuweisungtabelle laden und für die interne Nutzung anpassen
+			$this->LogMessage('---ApplyChange',KL_NOTIFY);
+			$varAssignmentDst = array();
+			$varAssignmentSrc = json_decode($this->ReadPropertyString('panelPageValuesArray'),true);
+
+			$this->LogMessage('1:'.$varAssignmentSrc[0]['panelPage'],KL_NOTIFY);
+
+			foreach ($varAssignmentSrc as $listEntry) {
+				$this->LogMessage(implode(':',array_keys($listEntry)),KL_NOTIFY);
+				$this->LogMessage('Seite :'.$listEntry['panelPage'],KL_NOTIFY);
+				$this->LogMessage(implode(':',array_keys($listEntry['panelPageValues'])),KL_NOTIFY);
+				$cnt=0;
+				foreach ($listEntry['panelPageValues'] as $pageEntry) {
+					if (array_key_exists('objectId', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['objectId'] = $pageEntry['objectId'];
+					if (array_key_exists('split', $pageEntry) && strlen(trim($pageEntry['split']))>0) $varAssignmentDst[$listEntry['panelPage']][$cnt]['split'] = $pageEntry['split'];
+					if (array_key_exists('resultField', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['resultField'] = $pageEntry['resultField'];
+					$cnt++;
+					$this->LogMessage(' -'.$pageEntry['objectId'] ,KL_NOTIFY);
+				 }
+			}
+			$this->LogMessage('---ApplyChange',KL_NOTIFY);
+			$this->LogMessage('---'.json_encode($varAssignmentDst),KL_NOTIFY);
+
+
 //			$this->LogMessage('result:'.json_encode($panelPageDst),KL_NOTIFY);
 //			$this->LogMessage('apply change',KL_NOTIFY);
 //			$this->LogMessage($this->ReadPropertyString('panelPage2'),KL_NOTIFY);
 			// Werte speichern
 			$this->WriteAttributeString('panelPage',json_encode($panelPageDst));
+			$this->WriteAttributeString('varAssignment', json_encode($varAssignmentDst));
 
 			$this->sendMqtt_CustomSend(array('pageType~pageStartup'));	
 
@@ -114,7 +140,7 @@ declare(strict_types=1);
 			$this->LogMessage('mod_nspanel:'.json_encode($data, JSON_UNESCAPED_SLASHES),KL_NOTIFY);
 		}
 
-		public function Send1()
+/*		public function Send1()
 		{
 		
 			$data['DataID'] = '{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}';
@@ -143,80 +169,95 @@ declare(strict_types=1);
 			$this->sendMqtt_CustomSend($panelPage[$Number]['payload']);
 			
 		}
+*/
 
 		public function LoadEntry(string $page) {
-
 			# Tabelle der Seiteneinträge erstellen
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
-			$columns = explode('~',$panelPage[$page]['payload'][1]); 
-			$columnNumber=0;
-			$entry=array();
-			$values=array();
-			foreach ($columns as $element) {
-				// showPageColumns
-				$entry[$columnNumber]['caption'] = "$columnNumber";
-				$entry[$columnNumber]['name'] = "id$columnNumber";
-				$entry[$columnNumber]['width'] = (strlen($element)*12+5).'px';
-				$values[0]["id$columnNumber"] = "$element";
-				$columnNumber++;
-			}
 
-/*			$columnNumber=0;
-			$values=array();
-			foreach ($columns as $element) {
-				// showPageColumns
-				$values[0]["id$columnNumber"] = "$element";
-				$columnNumber++;
-			}
-*/			$this->LogMessage('Select: '.json_encode($entry),KL_NOTIFY);
-/*			$cols= '[{
-					"caption": "ID",
-					"name": "id",
-					"width": "90px"
-				},
-				{
-					"caption": "ID5",
-					"name": "id2",
-					"width": "90px"
-				},
-				{
-					"caption": "ID6",
-					"name": "id2",
-					"width": "90px"
+			# kein Parameter übergeben oder ungültige Seite 
+			if (strlen(trim($page)) == 0 ) return;
+	#		if (!array_key_exists($panelPage[$page])) $this->LogMessage('key',KL_NOTIFY);
+
+			if (array_key_exists('payload',$panelPage[$page])){
+				$columns = explode('~',$panelPage[$page]['payload'][1]); 
+				$columnNumber=0;
+				$entry=array();
+				$values=array();
+				foreach ($columns as $element) {
+					// showPageColumns
+					$entry[$columnNumber]['caption'] = "$columnNumber";
+					$entry[$columnNumber]['name'] = "id$columnNumber";
+					$entry[$columnNumber]['width'] = (strlen($element)*12+5).'px';
+					$values[0]["id$columnNumber"] = "$element";
+					$columnNumber++;
 				}
-			]';
-*/
-			#			$values = '[{"id1":"1","id2":"2"}]';
-#			$this->LogMessage('Select: '.json_encode($values),KL_NOTIFY);
 
-			$this->UpdateFormField("showPageColumns", "columns", json_encode($entry));
-			$this->UpdateFormField("showPageColumns", "values", json_encode($values));
+	/*			$columnNumber=0;
+				$values=array();
+				foreach ($columns as $element) {
+					// showPageColumns
+					$values[0]["id$columnNumber"] = "$element";
+					$columnNumber++;
+				}
+	*/			$this->LogMessage('Select: '.json_encode($entry),KL_NOTIFY);
+	/*			$cols= '[{
+						"caption": "ID",
+						"name": "id",
+						"width": "90px"
+					},
+					{
+						"caption": "ID5",
+						"name": "id2",
+						"width": "90px"
+					},
+					{
+						"caption": "ID6",
+						"name": "id2",
+						"width": "90px"
+					}
+				]';
+	*/
+				#			$values = '[{"id1":"1","id2":"2"}]';
+	#			$this->LogMessage('Select: '.json_encode($values),KL_NOTIFY);
 
+				$this->UpdateFormField("showPageColumns", "columns", json_encode($entry));
+				$this->UpdateFormField("showPageColumns", "values", json_encode($values));
+			}
 		}
 
 		public function Save() {
-			$this->LogMessage('Save: ',KL_NOTIFY);
 			$name=array();
 			$save_name='backup';
 			foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
-				$this->LogMessage('Save:'.$id,KL_NOTIFY );
-				$name[(IPS_GetObject($id))['ObjectName']]=$id;
+				$name[(IPS_GetObject($id))['ObjectIdent']]=$id;
 			}
 			$this->LogMessage('Keys: '.implode('-',array_keys($name)),KL_NOTIFY);
 			$cnt=0;
-			while (array_key_exists("$save_name $cnt",$name)) {
+
+			while (array_key_exists($save_name."pages$cnt",$name) || array_key_exists($save_name."assignment$cnt",$name)) {
 				$this->LogMessage("Loop $cnt",KL_NOTIFY);
 				$cnt++;
 			}
-			$this->LogMessage('create '. $save_name.$cnt,KL_NOTIFY );
-			$this->RegisterVariableString("$save_name$cnt","$save_name $cnt");
-			$this->SetValue($save_name.$cnt,json_encode($this->ReadPropertyString('panelPageConf')));
+			$this->LogMessage("Save configuration to $save_name $cnt",KL_NOTIFY);
+
+			$this->RegisterVariableString($save_name."pages$cnt",$save_name." $cnt: pages");
+			$this->SetValue($save_name."pages$cnt",json_encode($this->ReadPropertyString('panelPageConf')));
+
+			$this->RegisterVariableString($save_name."assignment$cnt",$save_name." $cnt: assignment");
+			$this->SetValue($save_name."assignment$cnt",json_encode($this->ReadPropertyString('panelPageValuesArray')));
+
 			$this->UpdateFormField("save","enabled",false);
 		}
 
 		public function Load(string $backupname) {
 			$this->LogMessage('Load: '.$backupname,KL_NOTIFY);
-			$this->UpdateFormField('panelPageConf','values',json_decode($this->GetValue($backupname)));
+			if (preg_match('/backuppages\d+/',$backupname) ) {
+				$this->UpdateFormField('panelPageConf','values',json_decode($this->GetValue($backupname)));
+			} elseif (preg_match('/backupassignment\d+/',$backupname) ) {
+				$this->UpdateFormField('panelPageValuesArray','values',json_decode($this->GetValue($backupname)));
+			}
+
 		}
 
 
@@ -249,15 +290,18 @@ declare(strict_types=1);
 		}
 
 		private function sendMqtt_CustomSend($payload) {
-			$dataMQTT['DataID'] = '{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}';
-			$dataMQTT['PacketType'] = 3;
-			$dataMQTT['QualityOfService'] = 0;
-			$dataMQTT['Retain'] = false;
-			$dataMQTT['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic').'/CustomSend';
-			foreach ($payload as $value ) {
-				$dataMQTT['Payload'] = $value;
-				$this->SendDataToParent(json_encode($dataMQTT, JSON_UNESCAPED_SLASHES));
-				if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('send:'.$dataMQTT['Topic'].'/'.$dataMQTT['Payload'],KL_NOTIFY);
+			
+			if (is_array($payload)) {
+				$dataMQTT['DataID'] = '{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}';
+				$dataMQTT['PacketType'] = 3;
+				$dataMQTT['QualityOfService'] = 0;
+				$dataMQTT['Retain'] = false;
+				$dataMQTT['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic').'/CustomSend';
+				foreach ($payload as $value ) {
+					$dataMQTT['Payload'] = $value;
+					$this->SendDataToParent(json_encode($dataMQTT, JSON_UNESCAPED_SLASHES));
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('send:'.$dataMQTT['Topic'].'/'.$dataMQTT['Payload'],KL_NOTIFY);
+				}
 			}
 		}
 
@@ -265,6 +309,11 @@ declare(strict_types=1);
 		{
 			# Seiten-Array anlegen
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
+			# Wenn das array leer ist, kann keine Berechnung durchgeführt werden, unconfigured an das Panel senden
+			if (count($panelPage) == 0)	{
+				$this->sendMqtt_CustomSend(array('pageType~cardEntities','entityUpd~unconfigured~'));
+				return;
+			}
 			# Array für die Seitenzahlen der aktuellen Ebene anlegen
 			$subPanelPage = array ();
 			$debug = $this->ReadPropertyBoolean("PropertyVariableDebug"); 
@@ -337,19 +386,32 @@ declare(strict_types=1);
 			# darzustellende Seite aus den Array laden
 			$Page = explode('~',$panelPage[$currentPage]['payload'][1]);
 
-			$readData = array (
-				0 =>   array ( 	array ( 'objectId' => 4, 'resultfield' => 8 ), 
-								array ( 'split' => '|', 'objectId' => 10, 'resultfield' => 14 ), 
-								array ( 'split' => '|', 'objectId' => 16, 'resultfield' => 20 ),
-								array ( 'objectId' => 22 , 'resultfield' => 26 ) ,
-			),
-				6252 => array ( array ('objectId' => 1, 'resultfield' => 8 ),
-			),
-				23	=> array (	array ('objectId' => 16, 'resultfield' => 17),
-								array ('objectId' => 18, 'resultfield' => 18),
-						),
+			# Zuordnung der Werte
+			$this->LogMessage('assignment',KL_NOTIFY);
+			
+			$readData = json_decode($this->ReadAttributeString("varAssignment"),true);
+				foreach ($readData as $a => $b) {
+					$this->LogMessage("- Page $a ", KL_NOTIFY);
+					foreach ($b as $c => $e) {
+						$this->LogMessage("- - Entry $c : objectId:".$e['objectId'] . ' resultField:'.$e['resultField'], KL_NOTIFY);
+					}
+				}
+			$this->LogMessage($this->ReadAttributeString("varAssignment"),KL_NOTIFY);
+			$this->LogMessage('assignment',KL_NOTIFY);
 
-			);
+			// $readData = array (
+			// 	0 =>   array ( 	array ( 'objectId' => 4, 'resultfield' => 8 ), 
+			// 					array ( 'split' => '|', 'objectId' => 10, 'resultfield' => 14 ), 
+			// 					array ( 'split' => '|', 'objectId' => 16, 'resultfield' => 20 ),
+			// 					array ( 'objectId' => 22 , 'resultfield' => 26 ) ,
+			// ),
+			// 	6252 => array ( array ('objectId' => 1, 'resultfield' => 8 ),
+			// ),
+			// 	23	=> array (	array ('objectId' => 16, 'resultfield' => 17),
+			// 					array ('objectId' => 18, 'resultfield' => 18),
+			// 			),
+
+			// );
 
 /*			$readData = array (
 				0 =>   array ( 	array ( 'objectId' => 4, 'resultfield' => 8 ), 
@@ -363,7 +425,7 @@ declare(strict_types=1);
 			if(array_key_exists($currentPage,$readData)){
 				foreach ($readData[$currentPage] as $element) {
 					if (array_key_exists($element['objectId'],$Page)) {
-						if ($debug) $this->LogMessage("readData for Page $currentPage object from field:".$element['objectId'].' result to field:'.$element['resultfield'],KL_NOTIFY);
+						if ($debug) $this->LogMessage("readData for Page $currentPage object from field:".$element['objectId'].' result to field:'.$element['resultField'],KL_NOTIFY);
 						$objectId = $Page[$element['objectId']];
 					} else {
 						$this->LogMessage("readData Page $currentPage, couldn't find  column ".$element['objectId'],KL_NOTIFY);
@@ -383,13 +445,13 @@ declare(strict_types=1);
 
 						$this->LogMessage("getValue: ".$objectValue,KL_NOTIFY);
 						if (array_key_exists('split',$element)) {
-							$value_array=explode($element['split'],$Page[$element['resultfield']]);
-							if ($debug) $this->LogMessage("change from: ".$Page[$element['resultfield']],KL_NOTIFY);
+							$value_array=explode($element['split'],$Page[$element['resultField']]);
+							if ($debug) $this->LogMessage("change from: ".$Page[$element['resultField']],KL_NOTIFY);
 							$value_array[0]=$objectValue;
-							$Page[$element['resultfield']]=implode($element['split'],$value_array);
-							if ($debug) $this->LogMessage("         to: ".$Page[$element['resultfield']],KL_NOTIFY);
+							$Page[$element['resultField']]=implode($element['split'],$value_array);
+							if ($debug) $this->LogMessage("         to: ".$Page[$element['resultField']],KL_NOTIFY);
 						} else {
-							$Page[$element['resultfield']] = $objectValue;
+							$Page[$element['resultField']] = $objectValue;
 						}
 					} else {
 						$this->LogMessage("variable $objectId does not exist",KL_NOTIFY);
@@ -503,99 +565,24 @@ declare(strict_types=1);
 		public function GetConfigurationForm() {
 			$Form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
 		//	return json_encode($Form);			
-
-
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
-
-/*			$this->LogMessage('original F'.$this->ReadAttributeString("panelPage"),KL_NOTIFY);
-			foreach ($panelPage as $key => $element) {
-				
-				$this->LogMessage($key.' Inhalt:'.$element['payload'][0].' ## '.$element['payload'][1],KL_NOTIFY);
-				$addValue = array ();
-				$addValue = [
-							'id' => $key,
-							'type' => $element['payload'][0],
-							'entry' => $element['payload'][1],
-						
-					];
-				if (array_key_exists('main',$element)) {
-					$addValue['main'] = $element['main'];
-				}
-				if (array_key_exists('return',$element)) {
-					$addValue['return'] = $element['main'];
-				}
-				$this->LogMessage($addValue['id'].' ## '. $addValue['type'].' ## '.$addValue['entry'],KL_NOTIFY);
-#				$Form['elements'][2]['values'][] = $addValue;
-
-			}
-			$this->LogMessage('Load Form',KL_NOTIFY);
-			
-			foreach ($Form as $key => $element) {
-				$cnt=0;
-				$this->LogMessage($key,KL_NOTIFY);
-				foreach ($element as $subElement) {
-					if (array_key_exists('name',$subElement)) $this->LogMessage('- '.$subElement['name'],KL_NOTIFY);
-					$this->LogMessage('Key:'.implode('-',array_keys($subElement)),KL_NOTIFY);
-					$cnt++;
-				}
-			}
-*/			
-/*			$addValue = [
-				"type" => "CheckBox",
-				"name" => "activated",
-				"caption" => "activated",
-				"value" => $this->ReadAttributeBoolean('Activated'), 
-				"onChange" => 'DBNSP_SwapModuleStatus($id);'
-			];
-*/
-
-/*			$addValue = [ 
-				"type" => "Select", 
-				"name" => "page", 
-				"caption" => "Seite",
-				];
-				$cnt=0;
-			foreach ($panelPage as $key => $element) {
-				$addValue['options'][$cnt]['caption'] = 'Seite '.$key;
-				$addValue['options'][$cnt]['value'] =  $key;
-$cnt++;
-			}
-*/
-
-/*			$addValue = [ 
-				"type" => "Select", 
-				"name" => "DeviceType", 
-				"caption" => "Einheit",
-				"options" => [
-					[ "caption" => "Bit (1Bit)", "value" => 0 ],
-					[ "caption" => "Bits (2Bit)", "value" => 1 ],
-					[ "caption" => "Bits (4Bit)", "value" => 2 ],
-					[ "caption" => "Byte (8Bit)", "value" => 3 ]
-				]
-				];
-*/			
-
-			
-#			$Form['actions'][]=$addValue;
 			
 			# Bereich elements
 
-foreach($panelPage as $key => $element) {
-	$this->LogMessage('key: '.$key,KL_NOTIFY);
-	foreach($element as $key2 => $element2) {
-		$this->LogMessage(' --:'.$key2,KL_NOTIFY);
-		if ($key2 == 'payload') {
-			$this->LogMessage(' --:'.implode('#',$element2),KL_NOTIFY);
-		}
-		// foreach($element2 as $key3 => $element3) {
-		// 	$this->LogMessage(' --:'.$key3,KL_NOTIFY);
-		// }
-	}
-}
-reset($panelPage);
-$a=key($panelPage);
-#$this->LogMessage('----#---#'.$a,KL_NOTIFY);
-#$this->LogMessage($panelPage[0]['payload'][1],KL_NOTIFY);
+			foreach($panelPage as $key => $element) {
+				$this->LogMessage('key: '.$key,KL_NOTIFY);
+				foreach($element as $key2 => $element2) {
+					$this->LogMessage(' --:'.$key2,KL_NOTIFY);
+					if ($key2 == 'payload') {
+						$this->LogMessage(' --:'.implode('#',$element2),KL_NOTIFY);
+					}
+					// foreach($element2 as $key3 => $element3) {
+					// 	$this->LogMessage(' --:'.$key3,KL_NOTIFY);
+					// }
+				}
+			}
+			reset($panelPage);
+			$a=key($panelPage);
 
 			foreach ($Form['elements'] as $key => $element) {
 				$this->LogMessage('1 '.$element['type'],KL_NOTIFY);
@@ -621,14 +608,27 @@ $a=key($panelPage);
 								if ($selectElement['name'] == 'resultField') {
 									$cnt=0;
 									reset($panelPage);
-									$firstPageKey=key($panelPage);
-									foreach (explode('~',$panelPage[$firstPageKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
-										$this->LogMessage(' ------'.$selectKey.'--'.$pageEntryColum,KL_NOTIFY);
-										$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
-										$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
-										$cnt++;
+									if (count($panelPage) > 0) {
+										$firstPageKey=key($panelPage);
+										foreach (explode('~',$panelPage[$firstPageKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
+											$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
+											$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
+											$cnt++;
+										}
+									}
+								} elseif ($selectElement['name'] == 'objectId') {
+									$cnt=0;
+									reset($panelPage);
+									if (count($panelPage) > 0) {
+										$firstPageKey=key($panelPage);
+										foreach (explode('~',$panelPage[$firstPageKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
+											$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
+											$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
+											$cnt++;
+										}
 									}
 								}
+
 							}
 						}
 					}
@@ -660,11 +660,11 @@ $a=key($panelPage);
 							$this->LogMessage(' - '.$itemElement['name'],KL_NOTIFY);
 							$cnt=0;
 							foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
-								$backupname=(IPS_GetObject($id))['ObjectName'];
-								if (preg_match('/backup\s+\d+/',$backupname)) {
+								$backupname=(IPS_GetObject($id))['ObjectIdent'];
+								if (preg_match('/backup(pages|assignment)\d+/',(IPS_GetObject($id))['ObjectIdent'])) {
 									$this->LogMessage('Save:'.$id.' - '.(IPS_GetObject($id))['ObjectName'],KL_NOTIFY );
 									$this->LogMessage("['actions'][$key]['items'][$keyItem]['options'][$cnt]['caption'] ",KL_NOTIFY);
-									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['caption'] = $backupname;
+									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['caption'] = (IPS_GetObject($id))['ObjectName'];
 									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['value'] = (IPS_GetObject($id))['ObjectIdent'];
 									$cnt++;
 								}

@@ -114,7 +114,7 @@
                     "caption": "Variablenverknüpfung",
                     "name": "panelPageValues",
                     "width": "350px",
-                    "visible": false,
+                    "visible": true,
                     "add": "",
                     "edit": {
                         "type": "List",
@@ -130,7 +130,18 @@
                                 "width": "300px",
                                 "add": 0,
                                 "edit": {
-                                    "type": "SelectVariable"
+                                    "type": "Select",
+                                    "options" : [
+                                    ]
+                                }
+                            },
+                            {
+                                "caption": "Trenner",
+                                "name": "split",
+                                "width": "120px",
+                                "add": "",
+                                "edit": {
+                                    "type": "ValidationTextBox"
                                 }
                             },
                             {
@@ -144,6 +155,7 @@
                                     ]
                                 }
                             }
+
                         ]
                     }
                 }
@@ -214,7 +226,7 @@
                 {
                     "type": "Button",
                     "caption": "Send",
-                    "onClick": "DBNSP_Send1($id,$Text2);"
+                    "onClick": "DBNSP_Send($id,$Text2);"
                 },
                 {
                     "name": "Text2",
