@@ -20,9 +20,19 @@
                     "caption": "Screensaver Timeout"
                 },
                 {
-                    "type": "ValidationTextBox",
-                    "name": "sc_active",
-                    "caption": "Screensaver activate"
+                    "type" : "RowLayout",
+                    "items" : [
+                    {
+                        "type": "ValidationTextBox",
+                        "name": "sc",
+                        "caption": "Screensaver"
+                    },
+                    {
+                        "type" :"CheckBox", 
+                        "name": "sc_active", 
+                        "caption": "aktiv" 
+                    }
+                    ]
                 }
             ]
         },
@@ -180,16 +190,6 @@
                         "caption": "Spalten",
                         "rowCount": "1",
                         "columns": [
-                            {
-                                "caption": "ID",
-                                "name": "id",
-                                "width": "90px"
-                            },
-                            {
-                                "caption": "ID2",
-                                "name": "id2",
-                                "width": "90px"
-                            }
                         ]
                     },
                     {
