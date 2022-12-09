@@ -46,7 +46,7 @@
                 {
                     "caption": "ID",
                     "name": "id",
-                    "width": "90px",
+                    "width": "4%",
                     "add" : "",
                     "edit": {
                         "type": "NumberSpinner",
@@ -57,7 +57,7 @@
                 {
                     "caption": "main",
                     "name": "main",
-                    "width": "90px",
+                    "width": "4%",
                     "add" : "",
                     "edit": {
                         "type": "ValidationTextBox",
@@ -67,7 +67,7 @@
                 {
                     "caption": "return",
                     "name": "return",
-                    "width": "90px",
+                    "width": "4%",
                     "add" : "",
                     "edit": {
                         "type": "ValidationTextBox",
@@ -77,7 +77,7 @@
                 {
                     "caption": "type",
                     "name": "type",
-                    "width": "200px",
+                    "width": "10%",
                     "add" : "",
                     "edit": {
                         "type": "ValidationTextBox"
@@ -86,94 +86,233 @@
                 {
                     "caption": "entry",
                     "name": "entry",
-                    "width": "800px",
+                    "width": "68%",
                     "add" : "",
                     "edit": {
                         "type": "ValidationTextBox",
-                        "width": "1800px"
+                        "width": "100%"
                     }
                 }          
          
             ]
         },
         {
-            "type": "List",
-            "name": "panelPageValuesArray",
-            "caption": "Wertzuweisung",
-            "rowCount": 5,
-            "add": true,
-            "delete": true,
-            "columns": [
+            "type" : "RowLayout",
+            "items" : [
                 {
-                    "caption": "Seite",
-                    "name": "panelPage",
-                    "width": "50px",
-                    "visible": true,
-                    "add" : "0",
-                    "edit" : {
-                        "type": "Select",
-                        "width" : "200px",
-                        "options" : [
-                        ] ,
-                        "onChange" : "DBNSP_LoadPageColumns($id,$panelPage);"
-    
-                    }
-
-                },
-                {
-                    "caption": "Variablenverknüpfung",
-                    "name": "panelPageValues",
-                    "width": "350px",
-                    "visible": true,
-                    "add": "",
-                    "edit": {
-                        "type": "List",
-                        "enabled": true,
-                        "visible": true,
-                        "rowCount": 4,
-                        "add": true,
-                        "delete": true,
-                        "columns": [
-                            {
-                                "caption": "Variable",
-                                "name": "objectId",
-                                "width": "300px",
-                                "add": 0,
-                                "edit": {
-                                    "type": "Select",
-                                    "options" : [
-                                    ]
-                                }
-                            },
-                            {
-                                "caption": "Trenner",
-                                "name": "split",
-                                "width": "120px",
-                                "add": "",
-                                "edit": {
-                                    "type": "ValidationTextBox"
-                                }
-                            },
-                            {
-                                "caption": "Ergebnisspalte",
-                                "name": "resultField",
-                                "width": "300px",
-                                "add": 0,
-                                "edit": {
-                                    "type": "Select",
-                                    "options" : [
-                                    ]
-                                }
+                    "type": "List",
+                    "name": "panelPageValuesArray",
+                    "caption": "Wertzuweisung",
+                    "rowCount": 5,
+                    "add": true,
+                    "delete": true,
+                    "columns": [
+                        {
+                            "caption": "Seite",
+                            "name": "panelPage",
+                            "width": "50px",
+                            "visible": true,
+                            "add" : "0",
+                            "edit" : {
+                                "type": "Select",
+                                "width" : "200px",
+                                "options" : [
+                                ] ,
+                                "onChange" : "DBNSP_LoadPageColumns($id,$panelPage);"
+            
                             }
 
-                        ]
-                    }
+                        },
+                        {
+                            "caption": "Variablenverknüpfung",
+                            "name": "panelPageValues",
+                            "width": "350px",
+                            "visible": true,
+                            "add": "",
+                            "edit": {
+                                "type": "List",
+                                "enabled": true,
+                                "visible": true,
+                                "rowCount": 4,
+                                "add": true,
+                                "delete": true,
+                                "columns": [
+                                    {
+                                        "caption": "Variable",
+                                        "name": "objectId",
+                                        "width": "300px",
+                                        "add": 0,
+                                        "edit": {
+                                            "type": "SelectObject", 
+                                            "options" : [
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "caption": "Trenner",
+                                        "name": "split",
+                                        "width": "120px",
+                                        "add": "",
+                                        "edit": {
+                                            "type": "ValidationTextBox"
+                                        }
+                                    },
+                                    {
+                                        "caption": "formatiert",
+                                        "name": "formatted",
+                                        "width": "120px",
+                                        "add": false,
+                                        "edit": {
+                                            "type": "CheckBox"
+                                        }
+                                    },
+                                    {
+                                        "caption": "Ergebnisspalte",
+                                        "name": "resultField",
+                                        "width": "300px",
+                                        "add": 0,
+                                        "edit": {
+                                            "type": "NumberSpinner", 
+                                            "options" : [
+                                            ]
+                                        }
+                                    }
+
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "List",
+                    "name": "panelActionValuesArray",
+                    "caption": "Aktionszuweisung",
+                    "rowCount": 5,
+                    "add": true,
+                    "delete": true,
+                    "columns": [
+                        {
+                            "caption": "Seite/ Object",
+                            "name": "panelActionPage",
+                            "width": "150px",
+                            "visible": true,
+                            "add" : "0",
+                            "edit" : {
+                                "type": "NumberSpinner",
+                                "width" : "200px",
+                                "minimum": 0,
+                                "maximum": 60000
+                            }
+                        },
+                        {
+                            "caption": "Kommentar",
+                            "name": "panelActionComment",
+                            "width": "250px",
+                            "visible": true,
+                            "add" : "",
+                            "edit" : {
+                                "type": "ValidationTextBox",
+                                "width" : "200px"
+                            }
+                        },
+                        {
+                            "caption": "Variablenverknüpfung",
+                            "name": "panelActionValues",
+                            "width": "350px",
+                            "visible": true,
+                            "add": "",
+                            "edit": {
+                                "type": "List",
+                                "enabled": true,
+                                "visible": true,
+                                "rowCount": 4,
+                                "add": true,
+                                "delete": true,
+                                "onEdit" : "DBNSP_PanelActionReset($id,'edit');",
+                                "onAdd" :  "DBNSP_PanelActionReset($id,'add');",
+                                "columns": [
+                                    {
+                                        "caption": "result",
+                                        "name": "result",
+                                        "width": "150px",
+                                        "add": "",
+                                        "edit": {
+                                            "type": "ValidationTextBox",
+                                            "validate": "^.+$"
+                                        }
+                                    },
+                                    {
+                                        "caption": "filter",
+                                        "name": "filter",
+                                        "width": "150px",
+                                        "add": "",
+                                        "edit": {
+                                            "type": "ValidationTextBox"
+                                        }
+                                    },
+                                    {
+                                        "caption": "Aktion",
+                                        "name": "action",
+                                        "width": "120px",
+                                        "add": "RequestAction",
+                                        "edit": {
+                                            "type": "Select",
+                                            "options" : [
+                                                {"caption" : "RequestAction", "value" : 0},
+                                                {"caption" : "start script", "value" : 1},
+                                                {"caption" : "start script with parameter", "value" : 3},
+                                                {"caption" : "call Page", "value" : 2}
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "caption": "Seite / Object",
+                                        "name": "actionId",
+                                        "width": "200px",
+                                        "add": "",
+                                        "edit": {
+                                            "type": "NumberSpinner",
+                                            "maximum" : 60000, 
+                                            "minimum" : 0
+                                        }
+                                    },
+                                    {
+                                        "caption": "toggle",
+                                        "name": "toggle",
+                                        "width": "80px",
+                                        "add": false,
+                                        "edit": {
+                                            "type": "CheckBox",
+                                            "onChange" : "DBNSP_PanelActionToggle($id,$toggle);"
+                                        }
+                                    },
+                                    {
+                                        "caption": "maxstep",
+                                        "name": "maxstep",
+                                        "width": "80px",
+                                        "add": 0,
+                                        "edit": {
+                                            "type": "NumberSpinner",
+                                            "enabled": true
+                                        }
+                                    },
+                                    {
+                                        "caption": "value",
+                                        "name": "value",
+                                        "width": "80px",
+                                        "add": "",
+                                        "edit": {
+                                            "type": "ValidationTextBox"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
         },
-
-
-         {
+        {
             "type" :"CheckBox", 
             "name": "PropertyVariableDebug", 
             "caption": "Debug" 
@@ -183,7 +322,7 @@
         {
             "type": "ExpansionPanel",
             "caption": "ListHelper",
-                "items": [   
+            "items": [   
                     {
                         "type": "List",
                         "name": "showPageColumns",
@@ -215,7 +354,7 @@
                 {
                     "name": "Text",
                     "type": "ValidationTextBox",
-                    "width": "1500px", 
+                    "width": "1200px", 
                     "caption": "Text"
                 }
             ]
@@ -231,7 +370,7 @@
                 {
                     "name": "Text2",
                     "type": "ValidationTextBox",
-                    "width": "1500px", 
+                    "width": "1200px", 
                     "caption": "Text"
                 }
             ]
@@ -255,7 +394,7 @@
                     "type": "Select",
                     "name": "loadConfig",
                     "caption" : "Lade Konfiguration",
-                    "width": "150px",
+                    "width": "300px",
                         "options" : [
                         ]
                 }

@@ -1,6 +1,14 @@
 <?php
 
-# Todo Beim Laden des Konfigurators wird der reste Eintrag nich tin den ListHelper geladen
+# Todo Nachricth im Screensaver anzeigen:
+# text setzen notify~heading~text 
+# text löschen notify 
+# 
+# Formular: Aktionszuweisung: beim Ändern des Toggle-Button werden nicht immer die Felder maxvalue / value wieder auf enable gesetzt
+# bein anzeigen eins vorhandenen Eintrags werden die Felder ebenfalls nicht korrekt gesetzt
+
+
+
 declare(strict_types=1);
 	class NSPanelConfig extends IPSModule
 	{
@@ -24,22 +32,24 @@ declare(strict_types=1);
 			$this->RegisterPropertyString('sc_timeout','timeout~15');
 			$this->RegisterPropertyBoolean('sc_active',1);
 			$this->RegisterPropertyString('sc','pageType~screensaver');
-
-
 			$this->RegisterAttributeInteger('currentPage',0);   # aktuell dargestellte seite
 //			$this->RegisterAttributeInteger('lastPage',-1);     # die zuvor dargestellte Seite
 			$this->RegisterAttributeString('panelPage','{}');   # Seitendefinition interne Nutzung
 			$this->RegisterAttributeString('varAssignment','{}'); # Wertzuweisung der einzelnen Seiten, interne Nutzung
+			$this->RegisterAttributeString('actionAssignment','{}'); # Wertzuweisung der einzelnen Seiten, interne Nutzung
 			$this->RegisterAttributeString('registerVariable',''); # Variablen überwachen (MessageSink)
 			$this->RegisterAttributeInteger('skipMessageSinkforObject',0); # Objekt-ID für die Message-Sink übersrungen wird, wenn Objekt-Änderung durch Interaktion am Display erfogt
+			$this->RegisterAttributeBoolean('sc_state_active',0); # # Status des Screensavers, True wenn screensaber angezeigt wird 
 			$this->RegisterPropertyString('panelPageConf','{}');   # Seitendefinition im Formular
 			$this->RegisterPropertyString('panelPageValuesArray','{}'); # Wertzuweisung der einzelnen Seiten
+			$this->RegisterPropertyString('panelActionValuesArray','{}'); # Aktionszuweisung der einzelnen Seiten
+
 
 			// Status der Instanz speichern
 			$this->RegisterAttributeBoolean("Activated",false);
 
 
-			$this->RegisterTimer("Refresh",10, 'DBNSP_RefreshDate('.$this->InstanceID . ');');
+			$this->RegisterTimer("Refresh",10, 'DBNSP_RefreshDate('.$this->InstanceID . ',true);');
 		}
 
 		public function Destroy()
@@ -70,26 +80,64 @@ declare(strict_types=1);
 //			$this->LogMessage('1:'.$varAssignmentSrc[0]['panelPage'],KL_NOTIFY);
 
 			foreach ($varAssignmentSrc as $listEntry) {
-				$this->LogMessage(implode(':',array_keys($listEntry)),KL_NOTIFY);
-				$this->LogMessage('Seite :'.$listEntry['panelPage'],KL_NOTIFY);
-				$this->LogMessage(implode(':',array_keys($listEntry['panelPageValues'])),KL_NOTIFY);
 				$cnt=0;
 				foreach ($listEntry['panelPageValues'] as $pageEntry) {
+					$this->LogMessage('ObjectID: '.$pageEntry['objectId'],KL_NOTIFY);
 					if (array_key_exists('objectId', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['objectId'] = $pageEntry['objectId'];
 					if (array_key_exists('split', $pageEntry) && strlen(trim($pageEntry['split']))>0) $varAssignmentDst[$listEntry['panelPage']][$cnt]['split'] = $pageEntry['split'];
+					if (array_key_exists('formatted', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['formatted'] = $pageEntry['formatted'];
 					if (array_key_exists('resultField', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['resultField'] = $pageEntry['resultField'];
 					$cnt++;
-					$this->LogMessage(' -'.$pageEntry['objectId'] ,KL_NOTIFY);
 				 }
 			}
-			$this->LogMessage('---ApplyChange',KL_NOTIFY);
-			$this->LogMessage('---'.json_encode($varAssignmentDst),KL_NOTIFY);
+
+			// Werte aus der panelActionValuesArray für die interne Nutzung anpassen
+			$varActionAssignmentDst = array();
+			$varActionAssignmentSrc = json_decode($this->ReadPropertyString('panelActionValuesArray'),true);			
+			foreach ($varActionAssignmentSrc as $actionEntry => $actionListEntry) {
+//				$cnt=0;
+
+				foreach ($actionListEntry['panelActionValues'] as $actionValueKey => $actionValueEntry ) {
+					$filterDefinition='';
+					if (array_key_exists('filter',$actionValueEntry)) {
+						$this->LogMessage('filter',KL_NOTIFY);
+						if (strlen(trim($actionValueEntry['filter'])) > 0 ) {
+							$filterDefinition=':'.$actionValueEntry['filter'];
+						}
+					}
+				$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['action'] = $actionValueEntry['action'];
+					$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['id']         = $actionValueEntry['actionId'];
+					if ($actionValueEntry['toggle']){
+					 	$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['toggle'] = $actionValueEntry['toggle'];
+					} else {
+						if ($actionValueEntry['maxstep'] > 0){ 
+							$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['maxstep'] = $actionValueEntry['maxstep'];
+						} else {
+							if (strlen($actionValueEntry['value']) > 0) { # Wenn Value definiert wurde
+								$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['value'] = $actionValueEntry['value'];
+							}
+						}
+					}
+//					$cnt++;
+				}
+			}
+			$this->LogMessage('::'.json_encode($varActionAssignmentDst),KL_NOTIFY);	
+
+
 
 			// Werte speichern
 			$this->WriteAttributeString('panelPage',json_encode($panelPageDst));
 			$this->WriteAttributeString('varAssignment', json_encode($varAssignmentDst));
+			$this->WriteAttributeString('actionAssignment', json_encode($varActionAssignmentDst));
 
 			$this->sendMqtt_CustomSend(array('pageType~pageStartup'));	
+
+			// Screensaver aktiv, aktivere Datumsroutine
+			if ($this->ReadPropertyBoolean('sc_active')) {
+				$this->RefreshDate(true);
+			} else {
+				$this->RefreshDate(false);
+			}
 
 			// Status der Instanz auf gespeicherten Wert setzen (beim Laden des Moduls)
 			if ($this->ReadAttributeBoolean("Activated")) {
@@ -117,29 +165,47 @@ declare(strict_types=1);
 		}
 
 		private function registerVariableToMessageSink (bool $register ) {
-			if ($register) {
-				foreach(json_decode($this->ReadAttributeString('registerVariable'),true) as $element){
-					$this->RegisterMessage($element, VM_UPDATE);
-					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('var to observe: '.$element,KL_NOTIFY);
+			# $register == true: RegisterMessage für alle auf der aktuellen Seite dargestellen Variablen durchführen  
+			# $register == false: UnregisterMeassge für alle in Attribute registerVariable vorgemerkten Varaiblen aufheben und Attribut registerVariable leeren
+
+			$target = json_decode($this->ReadAttributeString('registerVariable'),true); // Soll-Zustand  RegisterMessage
+			$current = $this->GetMessageList (); // Ist-Zustand RegisterMessage
+
+			$this->LogMessage('Target:'. implode('-',array_keys($target)),KL_NOTIFY);
+			$this->LogMessage('Current:'. implode('-',array_keys($current)),KL_NOTIFY);
+
+
+			if ($register) { // RegisterMessage anpasse
+				foreach(array_diff_key($target,$current) as $key => $element){
+					$this->RegisterMessage($key, VM_UPDATE);
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('var to observe: '.$key,KL_NOTIFY);
+				}
+				foreach(array_diff_key($current,$target) as $key => $element){
+					$this->UnregisterMessage($key, VM_UPDATE);
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('remove from observe: '.$key,KL_NOTIFY);
 				}
 			} else {
-				foreach(json_decode($this->ReadAttributeString('registerVariable'),true) as $element){
-					$this->UnregisterMessage($element, VM_UPDATE);
-					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('remove from observe: '.$element,KL_NOTIFY);
+				foreach($current as $key => $element){
+					$this->UnregisterMessage($key, VM_UPDATE);
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('remove from observe: '.$key,KL_NOTIFY);
 				}
-			$this->WriteAttributeString('registerVariable',json_encode(array()));
+				$this->WriteAttributeString('registerVariable',json_encode(array()));
 			}
 		}
 
-		public function RefreshDate () {
-			$id=$this->InstanceID;
-			$this->SetTimerInterval("Refresh",(60-date("s",time()))*1000);
-			$now_time = date("H:i", time());
-			$now_date = strftime("%A %d. %b %Y", time());
-			$this->sendMqtt_CustomSend(array("time~$now_time","date~$now_date"));
+		public function RefreshDate (bool $active) {
+//			$id=$this->InstanceID;
+			if ($active) { # nächsten Refreshzeitpunkt
+				$this->SetTimerInterval("Refresh",(60-date("s",time()))*1000);
+				$now_time = date("H:i", time());
+				$now_date = strftime("%A %d. %b %Y", time());
+				$this->sendMqtt_CustomSend(array("time~$now_time","date~$now_date"));
+			} else { # Refresh abschalten
+				$this->SetTimerInterval("Refresh",0);
+			}
 		}
 
-		public function sendTime(){
+/*		public function sendTime(){
 			$data['DataID'] = '{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}';
 			$data['PacketType'] = 3;
             $data['QualityOfService'] = 0;
@@ -149,7 +215,7 @@ declare(strict_types=1);
 			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
 			$this->LogMessage('mod_nspanel:'.json_encode($data, JSON_UNESCAPED_SLASHES),KL_NOTIFY);			
 		}
-
+*/
 		public function Send(string $Text)
 		{
 		
@@ -210,6 +276,9 @@ declare(strict_types=1);
 			$this->RegisterVariableString($save_name."assignment$cnt",$save_name." $cnt: assignment");
 			$this->SetValue($save_name."assignment$cnt",json_encode($this->ReadPropertyString('panelPageValuesArray')));
 
+			$this->RegisterVariableString($save_name."action$cnt",$save_name." $cnt: action");
+			$this->SetValue($save_name."action$cnt",json_encode($this->ReadPropertyString('panelActionValuesArray')));
+
 			$this->UpdateFormField("save","enabled",false);
 		}
 
@@ -219,8 +288,9 @@ declare(strict_types=1);
 				$this->UpdateFormField('panelPageConf','values',json_decode($this->GetValue($backupname)));
 			} elseif (preg_match('/backupassignment\d+/',$backupname) ) {
 				$this->UpdateFormField('panelPageValuesArray','values',json_decode($this->GetValue($backupname)));
+			} elseif (preg_match('/backupassignment\d+/',$backupname) ) {
+				$this->UpdateFormField('panelActionValuesArray','values',json_decode($this->GetValue($backupname)));
 			}
-
 		}
 
 
@@ -237,6 +307,23 @@ declare(strict_types=1);
 			$this->LogMessage("load Entry ".json_encode($entry),KL_NOTIFY);
 			$this->UpdateFormField("resultField", "options", json_encode($entry));
 			$this->UpdateFormField("objectId", "options", json_encode($entry));
+		}
+
+		function PanelActionToggle(bool $toggle) {
+			$this->LogMessage('PanelActionToggle',KL_NOTIFY);
+			if ($toggle) {
+				$this->UpdateFormField("value", "enabled", false);
+				$this->UpdateFormField("maxstep", "enabled", false);
+			} else {
+				$this->UpdateFormField("value", "enabled", true);
+				$this->UpdateFormField("maxstep", "enabled", true);
+			}
+		}
+
+		function PanelActionReset(string $info) {
+			$this->LogMessage($info,KL_NOTIFY);
+			$this->UpdateFormField("value", "enabled", true);
+			$this->UpdateFormField("maxstep", "enabled", true);
 		}
 
 		private function sendMqtt_CustomSend($payload) {
@@ -357,42 +444,60 @@ declare(strict_types=1);
 			$registerVariable = array(); # Variablen zum Registrieren via MessageSink			
 			if(array_key_exists($currentPage,$readData)){
 				foreach ($readData[$currentPage] as $element) {
-					if (array_key_exists($element['objectId'],$Page)) {
-						$objectId = $Page[$element['objectId']];
-						if ($debug) $this->LogMessage("readData for Page $currentPage object (".$objectId.") from field:".$element['objectId'].' result to field:'.$element['resultField'],KL_NOTIFY);
-					} else {
-						$this->LogMessage("readData Page $currentPage, couldn't find  column ".$element['objectId'],KL_NOTIFY);
-						continue;
-					}
+					$objectId=$element['objectId'];
+					$this->LogMessage('page: ' . $currentPage . ', Read: objectId: '.$objectId,KL_NOTIFY);
 
-					if (IPS_VariableExists($objectId) ) {
-						# Wert auslesen
-						$objectValue=GetValue($objectId);
+					// if (array_key_exists($element['objectId'],$Page)) {
+					// 	$objectId = $Page[$element['objectId']];
+					// 	if ($debug) $this->LogMessage("readData for Page $currentPage object (".$objectId.") from field:".$element['objectId'].' result to field:'.$element['resultField'],KL_NOTIFY);
+					// } else {
+					// 	$this->LogMessage("readData Page $currentPage, couldn't find  column ".$element['objectId'],KL_NOTIFY);
+					// 	continue;
+					// }
 
-						$registerVariable[]=$objectId; // Var für MessageSink vormerken
+					if (array_key_exists($element['resultField'],$Page)) { 
+						if (IPS_VariableExists($objectId) || IPS_LinkExists($objectId)) {
 
-						# Wert auf 0 setzen, wenn Var vom Typ bool
-						if (is_bool($objectValue)) {
-							$objectValue= ($objectValue) ? 1:0;
-						}
+							$objectType = (IPS_GetObject($objectId))['ObjectType'];
 
-						if ($debug) $this->LogMessage("getValue: ".$objectValue,KL_NOTIFY);
-						if (array_key_exists('split',$element)) {
-							$value_array=explode($element['split'],$Page[$element['resultField']]);
-							if ($debug) $this->LogMessage("change from: ".$Page[$element['resultField']],KL_NOTIFY);
-							$value_array[0]=$objectValue;
-							$Page[$element['resultField']]=implode($element['split'],$value_array);
-							if ($debug) $this->LogMessage("         to: ".$Page[$element['resultField']],KL_NOTIFY);
+							if ($objectType == 6) {
+								$objectId = (IPS_GetLink($objectId))['TargetID'];
+							}
+
+							# GetValueFormatted
+							if (array_key_exists('formatted',$element) && $element['formatted']) {
+								$objectValue=GetValueFormatted($objectId);
+							} else {
+								$objectValue=GetValue($objectId);
+							}
+								
+							$registerVariable[$objectId]=0; // Var für MessageSink vormerken
+
+							# Wert auf 0 setzen, wenn Var vom Typ bool
+							if (is_bool($objectValue)) {
+								$objectValue= ($objectValue) ? 1:0;
+							}
+
+							if ($debug) $this->LogMessage("getValue: ".$objectValue,KL_NOTIFY);
+							if (array_key_exists('split',$element)) {
+								$value_array=explode($element['split'],$Page[$element['resultField']]);
+								if ($debug) $this->LogMessage("change from: ".$Page[$element['resultField']],KL_NOTIFY);
+								$value_array[0]=$objectValue;
+								$Page[$element['resultField']]=implode($element['split'],$value_array);
+								if ($debug) $this->LogMessage("         to: ".$Page[$element['resultField']],KL_NOTIFY);
+							} else {
+								$Page[$element['resultField']] = $objectValue;
+							}
 						} else {
-							$Page[$element['resultField']] = $objectValue;
+							$this->LogMessage("variable/ link $objectId does not exist",KL_ERROR);
 						}
 					} else {
-						$this->LogMessage("variable $objectId does not exist",KL_NOTIFY);
+						$this->LogMessage('page: ' . $currentPage . ', column ' . $element['resultField'] . ' doesnt exist',KL_ERROR);
 					}
 
 				}
 			} else {
-				$this->LogMessage("nothing defined for key $currentPage in readData",KL_NOTIFY);
+				$this->LogMessage("nothing defined for page $currentPage in readData",KL_NOTIFY);
 			}	
 			$this->WriteAttributeString('registerVariable',json_encode($registerVariable));
 			return array($panelPage[$currentPage]['payload'][0],implode('~',$Page));
@@ -409,7 +514,7 @@ declare(strict_types=1);
 						# Index der Hauptseiten aufbauen, Anzahl der Hauptseiten ermitteln 
 						$payload = json_decode($data['Payload'],true);
 						if (array_key_exists('CustomRecv',$payload)) {
-							$this->LogMessage('receive: -'.$payload['CustomRecv'].'-',KL_NOTIFY);
+							if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('receive: -'.$payload['CustomRecv'].'-',KL_NOTIFY);
 						} else {
 							$this->LogMessage('got strange result: -'.$data['Payload'].'-',KL_NOTIFY);
 							return;
@@ -417,7 +522,11 @@ declare(strict_types=1);
 
 						switch ($payload['CustomRecv']) {
 
+							case 'event,startup,45,us-l':
+							case 'event,startup,45,us-p':
 							case 'event,startup,43,eu':
+							case 'event,startup,45,eu':
+#							case (preg_match('/event,startup,\d+,(eu|us-p|us-l)/', $payload['CustomRecv']) ? true : false) :
 								if (!empty($this->ReadPropertyString('sc_dimMode'))) {
 									$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode')));
 								}
@@ -432,63 +541,200 @@ declare(strict_types=1);
 							case 'event,sleepReached,cardEntities':
 							case 'event,sleepReached,cardGrid':
 								if ( $this->ReadPropertyBoolean('sc_active') && strlen(trim($this->ReadPropertyString('sc'))) > 0 ) {   
-									$now_time = date("H:i", time());
-									$now_date = strftime("%A %d. %b %Y", time());
-									$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc'),"time~$now_time","date~$now_date"));
-									$this->registerVariableToMessageSink(false);
+									$this->RefreshDate(true);
+									$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc')));
+									$this->registerVariableToMessageSink(false); # RegisterMessage für Var der aktuellen Seite aufheben   
+//									$this->WriteAttributeBoolean('sc_state_active',1);
 								}
 								break;
 
 							case 'event,buttonPress2,screensaver,bExit,1':
+								$this->RefreshDate(false);
 								$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadAttributeInteger('currentPage')));
-								$this->registerVariableToMessageSink(true);
+								$this->registerVariableToMessageSink(true); # RegisterMessage für Var der aktuellen Seite durchführen   
+								$this->WriteAttributeBoolean('sc_state_active',0);
 								break;
 
 							case 'event,buttonPress2,popupLight,bExit';
 								$this->sendMqtt_CustomSend($this->Value2Page(self::MAIN,-1));
+								$this->registerVariableToMessageSink(true);
 								break;
 
 							case 'event,buttonPress2,cardEntities,bPrev':
 							case 'event,buttonPress2,cardGrid,bPrev':
 								$this->sendMqtt_CustomSend($this->Value2Page(self::RWD,0-1));
+								$this->registerVariableToMessageSink(true);
 								break;
 		
 							case 'event,buttonPress2,cardEntities,bNext':
 							case 'event,buttonPress2,cardGrid,bNext':
 								$this->sendMqtt_CustomSend($this->Value2Page(self::FWD,-1));
+								$this->registerVariableToMessageSink(true);
 								break;
 
 							case 'event,buttonPress2,popupNotify,bExit':
+							case 'event,buttonPress2,popupShutter,bExit':
 								$this->sendMqtt_CustomSend($this->Value2Page(self::UP,-1));
+								$this->registerVariableToMessageSink(true);
 								break;
+
+							case 'event,buttonPress2,cardEntities,bUp':
 							case 'event,buttonPress2,cardGrid,bUp':
+							case 'event,buttonPress2,cardMedia,bUp':
 								$this->sendMqtt_CustomSend($this->Value2Page(self::UP,-1));
+								$this->registerVariableToMessageSink(true);
 								break;
 
-							}
+							default:
+								$debug = $this->ReadPropertyBoolean("PropertyVariableDebug"); 
 
-						if (preg_match('/event,buttonPress2,(.*),(number-set|OnOff|button),*(\d*)/', $payload['CustomRecv'],$result) ) {
-							$this->LogMessage('-> ' . $result[1] . ' - ' . $result[2] . ' - ' . $result[3],KL_NOTIFY);
-							# Prüfe ob Seite aufgerufen werden soll
-							$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
-							if (array_key_exists($result[1],$panelPage)) {
-								$this->LogMessage('Unterseite -> ' . $result[1],KL_NOTIFY);
-								$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$result[1]));
-							} else {
-								if (IPS_VariableExists($result[1]) ) {
-									# durch requestAction wird message-sink ausgelöst, führt zum flackern des Display, Attribut skipMessageSinkforObject wird in MessageSink wiedezurückgesetzt
-									$this->WriteAttributeInteger('skipMessageSinkforObject',$result[1]);
-									RequestAction($result[1],$result[3]);
-								} else {
-									$this->LogMessage('RequestAction for ' . $result[1] . ' not available',KL_NOTIFY);
+								# 0 RequestAction 1 Script 2 Page
+ 								# Yamha-MusicCast Play 1, stop 3, pause 2 next 4, prev 0
+								# Shelly up 0, down 4, stop 2
+								# Fibaro up 4, close 0, stop 2
+ 									
+								// $panelAction = array ( 	41321 => array ( 
+								// 						'media-OnOff'  => array ('action' => 0, 'id' => 20981, 'toggle' => true ),
+								// 						'volumeSlider' => array ('action' => 0, 'id' => 45373 , 'maxstep' => '2'),
+								// 						'media-pause' => array ('action' => 0, 'id' => 46056,  'value' => '2'),
+								// 						'media-back' => array ('action' => 0, 'id' => 46056,  'value' => '0'),
+								// 						'media-next' => array ('action' => 0, 'id' => 46056,  'value' => '4')
+								// 						),
+								// 						17024 => array (
+								// 						'up' => array ('action' => 0, 'id' => '18163' , 'value' => 0),
+								// 						'down' => array ('action' => 0, 'id' => '18163' , 'value' => 4),
+								// 						'stop' => array ('action' => 0, 'id' => '18163' , 'value' => 2)
+								// 						),
+								// 						36170 => array ( 
+								// 						'button' => array ( 'action' => 0, 'id' => '21407', 'value' => '1' ) 	
+								// 						), 
+								// 						50571 => array ( 
+								// 						'button' => array ( 'action' => 0, 'id' => '21407', 'value' => '2' )
+								// 						),
+								// 						10511 => array (
+								// 						'button' => array ('action' => '1', 'id' => '47496') 
+								// 						),
+								// 						90001 => array (
+								// 						'button' => array ('action' => '1', 'id' => '34718')	
+								// 						),
+								// 						109 => array (
+								// 						'notifyAction:yes' => array ( 'action' => '1', 'id' => '34718'),
+								// 						'notifyAction:no'  => array ( 'action' => '2', 'id' => '117')
+								// 						)
+								// 					);
+
+								$panelAction = 		json_decode($this->ReadAttributeString('actionAssignment'),true);
+								
 							
+								if (preg_match('/event,buttonPress2,(\d*),([^,]*),*([(yes|no)\d]*)/', $payload['CustomRecv'],$result) ) {
+									if ($debug) $this->LogMessage('-> ' . $result[1] . ' (1) - ' . $result[2] . ' (2) - ' . $result[3] . ' (3)',KL_NOTIFY);
+									# Prüfe ob Seite aufgerufen werden soll
+
+									$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
+
+									# $panelPage beinhaltet die darzustellenden Seiten, $panelAction die Aktionen, die über die Seiten gestartet werden
+									# in einer $panelAction zu einer Seite kann auch der Aufruf einer anderen Seite stehen, somit wird hier geprüft, ob
+									# ein Seitenaufruf für eine Seite in $panelPage auch in $panelAction  über $result[2] oder $result[2]:$result[3] 
+									# ( gefilterter Aufrufe, bspw popupNotify: vent,buttonPress2,109,notifyAction,yes)
+
+									if (array_key_exists($result[1],$panelPage) && !(array_key_exists($result[1],$panelAction) && (array_key_exists($result[2],$panelAction[$result[1]]) || array_key_exists($result[2].':'.$result[3],$panelAction[$result[1]]) ))) { // Aufruf ($result[1]) exists in $panelPage and not in $panelAction-> call page
+ 										$this->LogMessage('call page -> ' . $result[1],KL_NOTIFY);
+										$this->sendMqtt_CustomSend($this->Value2Page(self::GO,intval($result[1])));
+										$this->registerVariableToMessageSink(true);
+									} else {  //  $result[1] exists in $panelAction -> call Action
+										if (array_key_exists($result[1],$panelAction) ) {
+											if ($debug) $this->LogMessage($result[1].' defined in $panelAction', KL_NOTIFY);
+											if (array_key_exists($result[2],$panelAction[$result[1]]) || array_key_exists($result[2].':'.$result[3],$panelAction[$result[1]])) {
+												$this->LogMessage('found '.$result[2],KL_NOTIFY);
+												
+												if (array_key_exists($result[2].':'.$result[3],$panelAction[$result[1]])) {
+													# gefilterte $panelAction gefunden, aus $result[2]:$result[3]
+													if ($debug) $this->LogMessage('found filter '.$result[3],KL_NOTIFY);
+													$doAction = $result[2].':'.$result[3];
+												} else {
+													$doAction = $result[2];
+												}
+
+												# action abarbeiten: 0: RequestAction, 1: RunScript, 2: Goto Page, 3: RunscriptEx 
+												if ($panelAction[$result[1]][$doAction]['action'] == 0 ) {
+													if (IPS_VariableExists($panelAction[$result[1]][$doAction]['id'])) {
+														if ($debug) $this->LogMessage('RequestAction for object '.$panelAction[$result[1]][$doAction]['id'], KL_NOTIFY);
+														if (array_key_exists('toggle',$panelAction[$result[1]][$doAction]) && $panelAction[$result[1]][$doAction]['toggle']) {
+															if ($debug) $this->LogMessage('toggle', KL_NOTIFY);
+															$objectState = GetValue($panelAction[$result[1]][$doAction]['id']);
+															if ($objectState) {
+																if ($debug) $this->LogMessage(' --> off',KL_NOTIFY);
+																RequestAction($panelAction[$result[1]][$doAction]['id'],0);
+															}else {
+																RequestAction($panelAction[$result[1]][$doAction]['id'],1);
+																if ($debug) $this->LogMessage(' --> on',KL_NOTIFY);
+															}
+														} elseif (array_key_exists('value',$panelAction[$result[1]][$doAction])) {
+															if ($debug) $this->LogMessage('predefined value',KL_NOTIFY);
+															RequestAction($panelAction[$result[1]][$doAction]['id'],$panelAction[$result[1]][$doAction]['value']);
+														} else {
+															if ($debug) $this->LogMessage('value: '.$result[3], KL_NOTIFY);
+															if (array_key_exists('maxstep',$panelAction[$result[1]][$doAction])) {
+																$oldValue = GetValue($panelAction[$result[1]][$doAction]['id']);
+																if (($result[3] - $oldValue) > $panelAction[$result[1]][$doAction]['maxstep']) {
+																	if ($debug) $this->LogMessage("maxstep defined: old $oldValue, new $result[3]",KL_NOTIFY);
+																	RequestAction($panelAction[$result[1]][$doAction]['id'],$oldValue+$panelAction[$result[1]][$doAction]['maxstep']);
+																} else {
+																	RequestAction($panelAction[$result[1]][$doAction]['id'],$result[3]);
+																}
+															} else {
+																RequestAction($panelAction[$result[1]][$doAction]['id'],$result[3]);
+															}
+														}
+													} else {
+														$this->LogMessage('could not found object '.$result[1],KL_ERROR);
+													}
+												} elseif ($panelAction[$result[1]][$doAction]['action'] == 1 ) {
+													if (IPS_ScriptExists($panelAction[$result[1]][$doAction]['id'])) {
+														if ($debug) $this->LogMessage('RunScript '.$panelAction[$result[1]][$doAction]['id'],KL_NOTIFY);
+														IPS_RunScript($panelAction[$result[1]][$doAction]['id']);
+													} else {
+														$this->LogMessage('script '.$panelAction[$result[1]][$doAction]['id'].' doesnt exist',KL_ERROR);
+													}
+
+												} elseif ($panelAction[$result[1]][$doAction]['action'] == 3 ) {
+													if (IPS_ScriptExists($panelAction[$result[1]][$doAction]['id'])) {
+														if ($debug) $this->LogMessage('RunScriptEx '.$panelAction[$result[1]][$doAction]['id'],KL_NOTIFY);
+														if (array_key_exists('value',$panelAction[$result[1]][$doAction])) {
+															if ($debug) $this->LogMessage('predefined value',KL_NOTIFY);
+															IPS_RunScriptEx($panelAction[$result[1]][$doAction]['id'],array('value' => $panelAction[$result[1]][$doAction]['value']));
+															#RequestAction($panelAction[$result[1]][$doAction]['id'],$panelAction[$result[1]][$doAction]['value']);
+														} else {
+															if ($debug) $this->LogMessage('value: '.$result[3], KL_NOTIFY);
+															IPS_RunScriptEx($panelAction[$result[1]][$doAction]['id'],array('value' => $result[3]));
+														}
+													} else {
+														$this->LogMessage('script '.$panelAction[$result[1]][$doAction]['id'].'F doesnt exist',KL_ERROR);
+													}
+												} elseif ($panelAction[$result[1]][$doAction]['action'] == 2 ) {
+													if ($debug) $this->LogMessage('goto page '.$panelAction[$result[1]][$doAction]['id'],KL_NOTIFY);
+													$this->sendMqtt_CustomSend($this->Value2Page(self::GO,intval($panelAction[$result[1]][$doAction]['id'])));
+													$this->registerVariableToMessageSink(true);
+												}
+											}
+										} elseif ($result[1]< 60001 && IPS_VariableExists($result[1]) ) {
+											if (array_key_exists(3,$result) && $result[3] != '') {
+												if ($debug) $this->LogMessage('default: requestAction for $result[1] with value $result[2]',KL_NOTIFY);
+												# durch requestAction wird message-sink ausgelöst, führt zum flackern des Display, Attribut skipMessageSinkforObject wird in MessageSink wiedezurückgesetzt
+												$this->WriteAttributeInteger('skipMessageSinkforObject',$result[1]);
+												RequestAction($result[1],$result[3]);
+											} else {
+												$this->LogMessage("no value available for requestAction",KL_ERROR);
+											}
+										} else {
+											$this->LogMessage('RequestAction for ' . $result[1] . ' not available',KL_NOTIFY);
+									
+										}
+									}
 								}
-						
 							}
-						}
-					
-					}
 				
+					}				
 			}
 
 		}
@@ -496,73 +742,85 @@ declare(strict_types=1);
 
 		public function GetConfigurationForm() {
 			$Form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
-		//	return json_encode($Form);			
+			//return json_encode($Form);			
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
 			
 			# Bereich elements
 
-			foreach($panelPage as $key => $element) {
-				$this->LogMessage('key: '.$key,KL_NOTIFY);
-				foreach($element as $key2 => $element2) {
-					$this->LogMessage(' --:'.$key2,KL_NOTIFY);
-					if ($key2 == 'payload') {
-						$this->LogMessage(' --:'.implode('#',$element2),KL_NOTIFY);
-					}
-					// foreach($element2 as $key3 => $element3) {
-					// 	$this->LogMessage(' --:'.$key3,KL_NOTIFY);
-					// }
-				}
-			}
+			// foreach($panelPage as $key => $element) {
+			// 	$this->LogMessage('key: '.$key,KL_NOTIFY);
+			// 	foreach($element as $key2 => $element2) {
+			// 		$this->LogMessage(' --:'.$key2,KL_NOTIFY);
+			// 		if ($key2 == 'payload') {
+			// 			$this->LogMessage(' --:'.implode('#',$element2),KL_NOTIFY);
+			// 		}
+			// 		// foreach($element2 as $key3 => $element3) {
+			// 		// 	$this->LogMessage(' --:'.$key3,KL_NOTIFY);
+			// 		// }
+			// 	}
+			// }
 			reset($panelPage);
-//			$a=key($panelPage);
 
-			foreach ($Form['elements'] as $key => $element) {
-				$this->LogMessage('1 '.$element['type'],KL_NOTIFY);
+			foreach ($Form['elements'] as $keyLayer0 => $elementLayer0) {
+
 				# Seitendefinition
-				if (array_key_exists('name',$element) && $element['name'] == 'panelPageValuesArray') { # Suche nach panelPageValuesArray
-					foreach($element['columns'] as $keyColumn => $columnsElement) {
-						$this->LogMessage('  '."$keyColumn",KL_NOTIFY);
-						if ($columnsElement['name'] == 'panelPage') { # Suche nach panelPage
-							$cnt=0;
-							$addSet=true;
-							foreach ($panelPage as $pageKey => $pageElement) {
-								if ($addSet) {
-									$Form['elements'][$key]['columns'][$keyColumn]['add'] = "$pageKey";
-									$addSet=false;
-								}
-								$this->LogMessage('  + '.$cnt,KL_NOTIFY);
-								$Form['elements'][$key]['columns'][$keyColumn]['edit']['options'][$cnt]['caption'] = "$pageKey";
-								$Form['elements'][$key]['columns'][$keyColumn]['edit']['options'][$cnt]['value'] = "$pageKey";
-								$cnt++;
-							}
-						}
-						# Wertzuweisung
-						elseif ($columnsElement['name'] == 'panelPageValues') {
-							foreach ($columnsElement['edit']['columns'] as $selectKey => $selectElement){
-								if ($selectElement['name'] == 'resultField') { # Suche nach resultField
-									$cnt=0;
-									reset($panelPage);
-									if (count($panelPage) > 0) {
-										$firstPageKey=key($panelPage);
-										foreach (explode('~',$panelPage[$firstPageKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
-											$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
-											$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
-											$cnt++;
-										}
-									}
-								} elseif ($selectElement['name'] == 'objectId') { # Suche nach objectId
-									$cnt=0;
-									reset($panelPage);
-									if (count($panelPage) > 0) {
-										$firstPageKey=key($panelPage);
-										foreach (explode('~',$panelPage[$firstPageKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
-											$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
-											$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
-											$cnt++;
-										}
-									}
-								}
 
+				foreach ($Form['elements'][$keyLayer0] as $keyLayer1 => $elementLayer1) {
+					if ($elementLayer1 === 'RowLayout') {
+						foreach ($Form['elements'][$keyLayer0]['items'] as $keyLayer2 => $elementLayer2) {
+							foreach ($Form['elements'][$keyLayer0]['items'][$keyLayer2] as $keyLayer3 => $elementLayer3) {
+								if ($elementLayer3 === 'panelPageValuesArray') {
+									foreach($elementLayer2['columns'] as $keyColumn => $columnsElement) {
+										if ($columnsElement['name'] == 'panelPage') { # Suche nach panelPage
+											$cnt=0;
+											$addSet=true;
+											foreach ($panelPage as $pageKey => $pageElement) {
+												if ($addSet) {
+#													$Form['elements'][$key]['columns'][$keyColumn]['add'] = "$pageKey";
+													$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][$keyColumn]['add'] = "$pageKey";
+													$addSet=false;
+												}
+#												$Form['elements'][$key]['columns'][$keyColumn]['edit']['options'][$cnt]['caption'] = "$pageKey";
+#												$Form['elements'][$key]['columns'][$keyColumn]['edit']['options'][$cnt]['value'] = "$pageKey";
+												$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][$keyColumn]['edit']['options'][$cnt]['caption'] = "$pageKey";
+												$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][$keyColumn]['edit']['options'][$cnt]['value'] = "$pageKey";
+												$cnt++;
+											}
+										}
+										# Wertzuweisung
+										elseif ($columnsElement['name'] == 'panelPageValues') {
+											foreach ($columnsElement['edit']['columns'] as $selectKey => $selectElement){
+												if ($selectElement['name'] == 'resultField') { # Suche nach resultField
+													$cnt=0;
+													reset($panelPage);
+													if (count($panelPage) > 0) {
+														$firstPageKey=key($panelPage);
+														foreach (explode('~',$panelPage[$firstPageKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
+#															$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
+#															$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
+															$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
+															$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
+															$cnt++;
+														}
+													}
+												} elseif ($selectElement['name'] == 'objectId') { # Suche nach objectId
+													$cnt=0;
+													reset($panelPage);
+													if (count($panelPage) > 0) {
+														$firstPageKey=key($panelPage);
+														foreach (explode('~',$panelPage[$firstPageKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
+#															$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
+#															$Form['elements'][$key]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
+															$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['caption'] = "($pageEntryColum) $pageEntryElement";
+															$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][$keyColumn]['edit']['columns'][$selectKey]['edit']['options'][$cnt]['value'] = "$pageEntryColum";
+															$cnt++;
+														}
+													}
+												}
+											}
+										}
+									}
+								}
 							}
 						}
 					}
@@ -572,25 +830,17 @@ declare(strict_types=1);
 			# Bereich actions
 			# DropDown-Liste der Seitennummern erstellen
 			foreach ($Form['actions'] as $key => $element) {
-				$this->LogMessage($element['type'],KL_NOTIFY);
 				if (array_key_exists('items',$element)) {
 					foreach ($element['items'] as $keyItem => $itemElement ) {
 						# Seitenauswahl
 						if (array_key_exists('name',$itemElement) && $itemElement['name'] == 'showPage') {
-							$this->LogMessage(' - '.$itemElement['name'],KL_NOTIFY);
-							$this->LogMessage(' -  Key '.implode(':',array_keys($itemElement)),KL_NOTIFY);
-							$this->LogMessage(' -  Index '."$key : $keyItem",KL_NOTIFY);
-							$this->LogMessage(' -  Entry '.$Form['actions'][$key]['items'][$keyItem]['caption'],KL_NOTIFY);
 							$cnt=0;
 							foreach ($panelPage as $pageKey => $pageElement) {
-								$this->LogMessage('---Seitenhilfe'.$pageKey,KL_NOTIFY);
 								$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['caption'] = $pageKey;
 								$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['value'] = $pageKey;
 								$cnt++;
 							}
 							reset($panelPage);
-							//$this->LoadEntry(strval(key($panelPage)));
-							$this->LogMessage('---Seitenhilfe lade ' .key($panelPage),KL_NOTIFY);
 
 						# Load configuration
 						} elseif (array_key_exists('name',$itemElement) && $itemElement['name'] == 'showPageColumns') {	
@@ -606,13 +856,10 @@ declare(strict_types=1);
 								}
 							}
 						} elseif (array_key_exists('name',$itemElement) && $itemElement['name'] == 'loadConfig') {
-							$this->LogMessage(' - '.$itemElement['name'],KL_NOTIFY);
 							$cnt=0;
 							foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
 								$backupname=(IPS_GetObject($id))['ObjectIdent'];
 								if (preg_match('/backup(pages|assignment)\d+/',(IPS_GetObject($id))['ObjectIdent'])) {
-									$this->LogMessage('Save:'.$id.' - '.(IPS_GetObject($id))['ObjectName'],KL_NOTIFY );
-									$this->LogMessage("['actions'][$key]['items'][$keyItem]['options'][$cnt]['caption'] ",KL_NOTIFY);
 									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['caption'] = (IPS_GetObject($id))['ObjectName'];
 									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['value'] = (IPS_GetObject($id))['ObjectIdent'];
 									$cnt++;
@@ -620,7 +867,9 @@ declare(strict_types=1);
 							}
 						}
 					}
-				} 
+				} elseif (array_key_exists('name',$element) && $element['name'] == 'activated') {
+					$Form['actions'][$key]['value']=$this->ReadAttributeBoolean("Activated");
+				}
 			}
 
 			return json_encode($Form);
