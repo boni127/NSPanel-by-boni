@@ -42,6 +42,7 @@
             "caption": "Seitendefinition",
             "add": true,
             "delete": true,
+            "changeOrder" : true,
             "columns": [
                 {
                     "caption": "ID",
@@ -55,7 +56,7 @@
                     }
                 },
                 {
-                    "caption": "main",
+                    "caption": "Ebene",
                     "name": "main",
                     "width": "4%",
                     "add" : "",
@@ -65,7 +66,7 @@
                     }
                 },
                 {
-                    "caption": "return",
+                    "caption": "zurück zu",
                     "name": "return",
                     "width": "4%",
                     "add" : "",
@@ -75,7 +76,7 @@
                     }
                 },          
                 {
-                    "caption": "type",
+                    "caption": "Typ",
                     "name": "type",
                     "width": "10%",
                     "add" : "",
@@ -84,7 +85,7 @@
                     }
                 },
                 {
-                    "caption": "entry",
+                    "caption": "Eintrag",
                     "name": "entry",
                     "width": "68%",
                     "add" : "",
@@ -92,8 +93,7 @@
                         "type": "ValidationTextBox",
                         "width": "100%"
                     }
-                }          
-         
+                } 
             ]
         },
         {
@@ -117,9 +117,7 @@
                                 "type": "Select",
                                 "width" : "200px",
                                 "options" : [
-                                ] ,
-                                "onChange" : "DBNSP_LoadPageColumns($id,$panelPage);"
-            
+                                ] 
                             }
 
                         },
@@ -228,8 +226,8 @@
                                 "rowCount": 4,
                                 "add": true,
                                 "delete": true,
-                                "onEdit" : "DBNSP_PanelActionReset($id,'edit');",
-                                "onAdd" :  "DBNSP_PanelActionReset($id,'add');",
+                                "onEdit" : "IPS_RequestAction($id,'PanelActionReset','edit');",
+                                "onAdd" :  "IPS_RequestAction($id,'PanelActionReset','add');",
                                 "columns": [
                                     {
                                         "caption": "result",
@@ -283,7 +281,7 @@
                                         "add": false,
                                         "edit": {
                                             "type": "CheckBox",
-                                            "onChange" : "DBNSP_PanelActionToggle($id,$toggle);"
+                                            "onChange" : "IPS_RequestAction($id,'PanelActionToggle',$toggle);"
                                         }
                                     },
                                     {
@@ -338,7 +336,7 @@
                         "caption" : "Seite",
                         "options" : [
                         ],
-                        "onChange" : "DBNSP_LoadEntry($id,$showPage);"
+                        "onChange" : "IPS_RequestAction($id,'LoadEntry',$showPage);"
                     }
     
             ]
@@ -348,8 +346,8 @@
             "items" : [
                 {
                     "type": "Button",
-                    "caption": "Send",
-                    "onClick": "DBNSP_Send($id, $Text);"
+                    "caption": "Send1",
+                    "onClick": "IPS_RequestAction($id, 'Send', $Text);"
                 },
                 {
                     "name": "Text",
@@ -365,7 +363,7 @@
                 {
                     "type": "Button",
                     "caption": "Send",
-                    "onClick": "DBNSP_Send($id,$Text2);"
+                    "onClick":"IPS_RequestAction($id, 'Send', $Text2);"
                 },
                 {
                     "name": "Text2",
@@ -382,13 +380,13 @@
                     "type": "Button",
                     "caption": "Save",
                     "name" : "save",
-                    "onClick": "DBNSP_Save($id);",
+                    "onClick": "IPS_RequestAction($id, 'Save','');",
                     "enabled" : true
                 },
                 {
                     "type": "Button",
                     "caption": "Load",
-                    "onClick": "DBNSP_Load($id,$loadConfig);"
+                    "onClick": "IPS_RequestAction($id,'Load',$loadConfig);"
                 },
                 {
                     "type": "Select",
@@ -405,7 +403,7 @@
             "name":"activated",
             "caption":"activated",
             "value":false,
-            "onChange" : "DBNSP_SwapModuleStatus($id);"
+            "onChange" : "IPS_RequestAction($id,'SwapModuleStatus','');"
         }
 
 ],

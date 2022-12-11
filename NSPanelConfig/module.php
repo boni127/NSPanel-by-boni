@@ -7,6 +7,12 @@
 # Formular: Aktionszuweisung: beim Ändern des Toggle-Button werden nicht immer die Felder maxvalue / value wieder auf enable gesetzt
 # bein anzeigen eins vorhandenen Eintrags werden die Felder ebenfalls nicht korrekt gesetzt
 
+# es gibt neue Befehle: receive: -event,buttonPress2,screensaver,swipeLeft- / -event,buttonPress2,screensaver,bExit,2- 
+# diese werden noch nicht ausgewertet
+# in form.json Wertzuweisung "onChange" : "DBNSP_LoadPageColumns($id,$panelPage);"  entfernt.
+# Funktion kann aus module.php ebenfalls entfernt werden, ist schon auskommentiert
+
+
 
 
 declare(strict_types=1);
@@ -49,7 +55,8 @@ declare(strict_types=1);
 			$this->RegisterAttributeBoolean("Activated",false);
 
 
-			$this->RegisterTimer("Refresh",10, 'DBNSP_RefreshDate('.$this->InstanceID . ',true);');
+			#$this->RegisterTimer("Refresh",10, 'DBNSP_RefreshDate('.$this->InstanceID . ',true);');
+			$this->RegisterTimer("Refresh",10, 'IPS_RequestAction('.$this->InstanceID.',\'RefreshDate\',true);');
 		}
 
 		public function Destroy()
@@ -193,7 +200,38 @@ declare(strict_types=1);
 			}
 		}
 
-		public function RefreshDate (bool $active) {
+		public function RequestAction($Ident, $Value) {
+			$this->LogMessage("RequestAction : $Ident, $Value",KL_NOTIFY);
+			switch ($Ident) {
+				case "Send":
+					$this->Send($Value);
+					break;
+				case "Save":
+					$this->Save($Value);
+					break;
+				case "Load":
+					$this->Load($Value);
+					break;
+				case "RefreshDate":
+					$this->RefreshDate($Value);
+					break;
+				case "PanelActionReset":
+					$this->PanelActionReset($Value);
+					break;
+				case "PanelActionToggle":
+					$this->PanelActionToggle($Value);
+					break;
+				case "LoadEntry":
+					$this->LoadEntry("$Value");
+					break;
+				case "SwapModuleStatus":
+					$this->SwapModuleStatus();
+					break;
+
+			}  
+		}
+
+		private function RefreshDate (bool $active) {
 //			$id=$this->InstanceID;
 			if ($active) { # nächsten Refreshzeitpunkt
 				$this->SetTimerInterval("Refresh",(60-date("s",time()))*1000);
@@ -216,7 +254,7 @@ declare(strict_types=1);
 			$this->LogMessage('mod_nspanel:'.json_encode($data, JSON_UNESCAPED_SLASHES),KL_NOTIFY);			
 		}
 */
-		public function Send(string $Text)
+		private function Send(string $Text)
 		{
 		
 			$data['DataID'] = '{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}';
@@ -226,10 +264,10 @@ declare(strict_types=1);
             $data['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic').'/CustomSend';
             $data['Payload'] = $Text;
 			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
-			$this->LogMessage('mod_nspanel:'.json_encode($data, JSON_UNESCAPED_SLASHES),KL_NOTIFY);
+			$this->LogMessage('Send: '.$Text,KL_NOTIFY);
 		}
 
-		public function LoadEntry(string $page) {
+		private function LoadEntry(string $page) {
 			# Tabelle der Seiteneinträge erstellen
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
 
@@ -255,7 +293,7 @@ declare(strict_types=1);
 			}
 		}
 
-		public function Save() {
+		private function Save() {
 			$name=array();
 			$save_name='backup';
 			foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
@@ -282,34 +320,34 @@ declare(strict_types=1);
 			$this->UpdateFormField("save","enabled",false);
 		}
 
-		public function Load(string $backupname) {
+		private function Load(string $backupname) {
 			$this->LogMessage('Load: '.$backupname,KL_NOTIFY);
 			if (preg_match('/backuppages\d+/',$backupname) ) {
 				$this->UpdateFormField('panelPageConf','values',json_decode($this->GetValue($backupname)));
 			} elseif (preg_match('/backupassignment\d+/',$backupname) ) {
 				$this->UpdateFormField('panelPageValuesArray','values',json_decode($this->GetValue($backupname)));
-			} elseif (preg_match('/backupassignment\d+/',$backupname) ) {
+			} elseif (preg_match('/backupaction\d+/',$backupname) ) {
 				$this->UpdateFormField('panelActionValuesArray','values',json_decode($this->GetValue($backupname)));
 			}
 		}
 
 
-		function LoadPageColumns(string $panelKey) {
-			$this->LogMessage("load Values into configurator for Page $panelKey",KL_NOTIFY);
-			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
-			$columnNumber=0;
-			$entry=array();
-			foreach (explode('~',$panelPage[$panelKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
-				$entry[$columnNumber]['caption'] = "($pageEntryColum) $pageEntryElement";
-				$entry[$columnNumber]['value'] = "$pageEntryColum";
-				$columnNumber++;
-			}
-			$this->LogMessage("load Entry ".json_encode($entry),KL_NOTIFY);
-			$this->UpdateFormField("resultField", "options", json_encode($entry));
-			$this->UpdateFormField("objectId", "options", json_encode($entry));
-		}
+		// function LoadPageColumns(string $panelKey) {
+		// 	$this->LogMessage("load Values into configurator for Page $panelKey",KL_NOTIFY);
+		// 	$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
+		// 	$columnNumber=0;
+		// 	$entry=array();
+		// 	foreach (explode('~',$panelPage[$panelKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
+		// 		$entry[$columnNumber]['caption'] = "($pageEntryColum) $pageEntryElement";
+		// 		$entry[$columnNumber]['value'] = "$pageEntryColum";
+		// 		$columnNumber++;
+		// 	}
+		// 	$this->LogMessage("load Entry ".json_encode($entry),KL_NOTIFY);
+		// 	$this->UpdateFormField("resultField", "options", json_encode($entry));
+		// 	$this->UpdateFormField("objectId", "options", json_encode($entry));
+		// }
 
-		function PanelActionToggle(bool $toggle) {
+		private function PanelActionToggle(bool $toggle) {
 			$this->LogMessage('PanelActionToggle',KL_NOTIFY);
 			if ($toggle) {
 				$this->UpdateFormField("value", "enabled", false);
@@ -320,7 +358,7 @@ declare(strict_types=1);
 			}
 		}
 
-		function PanelActionReset(string $info) {
+		private function PanelActionReset(string $info) {
 			$this->LogMessage($info,KL_NOTIFY);
 			$this->UpdateFormField("value", "enabled", true);
 			$this->UpdateFormField("maxstep", "enabled", true);
@@ -342,7 +380,7 @@ declare(strict_types=1);
 			}
 		}
 
-		public function Value2Page(int $changePage,int $showPage) 
+		private function Value2Page(int $changePage,int $showPage) 
 		{
 			# Seiten-Array anlegen
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
@@ -367,8 +405,10 @@ declare(strict_types=1);
 				# Wenn key return existiert, dann dort hin springen, wenn nicht zu main springen, wenn main nicht exisitiert auf die erste Seite springen
 				$currentPage = $this->ReadAttributeInteger('currentPage');
 				if (array_key_exists('return',$panelPage[$currentPage])){
+					if ($debug) $this->LogMessage("return to page $currentPage",KL_NOTIFY);
 					$currentPage = $panelPage[$currentPage]['return'];
 				} elseif (array_key_exists('main',$panelPage[$currentPage])){
+					if ($debug) $this->LogMessage('return to layer '.$panelPage[$currentPage]['main'],KL_NOTIFY);
 					$currentPage = $panelPage[$currentPage]['main'];
 				} else {
 					if ($debug) $this->LogMessage("Page $currentPage: neither 'main' nor 'return' exists, goto first Page",KL_NOTIFY);
@@ -859,7 +899,7 @@ declare(strict_types=1);
 							$cnt=0;
 							foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
 								$backupname=(IPS_GetObject($id))['ObjectIdent'];
-								if (preg_match('/backup(pages|assignment)\d+/',(IPS_GetObject($id))['ObjectIdent'])) {
+								if (preg_match('/backup(pages|assignment|action)\d+/',(IPS_GetObject($id))['ObjectIdent'])) {
 									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['caption'] = (IPS_GetObject($id))['ObjectName'];
 									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['value'] = (IPS_GetObject($id))['ObjectIdent'];
 									$cnt++;
@@ -879,7 +919,7 @@ declare(strict_types=1);
 
 
 		// wird vom Formular aufgerufen : "onChange":"DBNSP_SwapModuleStatus($id);"
-		public function SwapModuleStatus () {
+		private function SwapModuleStatus () {
 			$mystate = $this->GetStatus();
 			if ($mystate == 104 ) {
 				$this->SetModuleActive(true);
@@ -903,11 +943,13 @@ declare(strict_types=1);
 				$this->LogMessage("enabled",KL_NOTIFY);
 				$this->WriteAttributeBoolean("Activated",true);
 				$this->UpdateFormField("activated","value",true);
+				$this->SetTimerInterval("Refresh",5000);
 				}
 			else {
 				$this->LogMessage("disabled",KL_NOTIFY);
 				$this->WriteAttributeBoolean("Activated",false);
 				$this->UpdateFormField("activated","value",false);
+				$this->SetTimerInterval("Refresh",0);
 				}
 			}
 
