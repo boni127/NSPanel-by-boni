@@ -84,12 +84,11 @@ declare(strict_types=1);
 			$varAssignmentDst = array();
 			$varAssignmentSrc = json_decode($this->ReadPropertyString('panelPageValuesArray'),true);
 
-//			$this->LogMessage('1:'.$varAssignmentSrc[0]['panelPage'],KL_NOTIFY);
 
 			foreach ($varAssignmentSrc as $listEntry) {
 				$cnt=0;
 				foreach ($listEntry['panelPageValues'] as $pageEntry) {
-					$this->LogMessage('ObjectID: '.$pageEntry['objectId'],KL_NOTIFY);
+					//$this->LogMessage('ObjectID: '.$pageEntry['objectId'],KL_NOTIFY);
 					if (array_key_exists('objectId', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['objectId'] = $pageEntry['objectId'];
 					if (array_key_exists('split', $pageEntry) && strlen(trim($pageEntry['split']))>0) $varAssignmentDst[$listEntry['panelPage']][$cnt]['split'] = $pageEntry['split'];
 					if (array_key_exists('formatted', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['formatted'] = $pageEntry['formatted'];
@@ -107,7 +106,6 @@ declare(strict_types=1);
 				foreach ($actionListEntry['panelActionValues'] as $actionValueKey => $actionValueEntry ) {
 					$filterDefinition='';
 					if (array_key_exists('filter',$actionValueEntry)) {
-						$this->LogMessage('filter',KL_NOTIFY);
 						if (strlen(trim($actionValueEntry['filter'])) > 0 ) {
 							$filterDefinition=':'.$actionValueEntry['filter'];
 						}
@@ -128,9 +126,7 @@ declare(strict_types=1);
 //					$cnt++;
 				}
 			}
-			$this->LogMessage('::'.json_encode($varActionAssignmentDst),KL_NOTIFY);	
-
-
+			
 
 			// Werte speichern
 			$this->WriteAttributeString('panelPage',json_encode($panelPageDst));
@@ -162,10 +158,10 @@ declare(strict_types=1);
 			# oder wieder entfernt 
 			if ($Data[1]){
 				if ($SenderID == $this->ReadAttributeInteger('skipMessageSinkforObject')) { # Wenn MessageSink durch skipMessageSinkforObject ausgelöst wurdem kommt die Interaktion vom Display, ignorieren
-					$this->LogMessage('skip message for '.$this->ReadAttributeInteger('skipMessageSinkforObject') ,KL_NOTIFY);
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('skip message for '.$this->ReadAttributeInteger('skipMessageSinkforObject') ,KL_NOTIFY);
 					$this->WriteAttributeInteger('skipMessageSinkforObject',0);
 				} else {
-					$this->LogMessage('MessageSink: sender ' . $SenderID . ' Message ' . $Message,KL_NOTIFY);
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('MessageSink: sender ' . $SenderID . ' Message ' . $Message,KL_NOTIFY);
 					$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadAttributeInteger('currentPage')));
 				}
 			}
@@ -174,27 +170,27 @@ declare(strict_types=1);
 		private function registerVariableToMessageSink (bool $register ) {
 			# $register == true: RegisterMessage für alle auf der aktuellen Seite dargestellen Variablen durchführen  
 			# $register == false: UnregisterMeassge für alle in Attribute registerVariable vorgemerkten Varaiblen aufheben und Attribut registerVariable leeren
-
+			$debug = $this->ReadPropertyBoolean("PropertyVariableDebug");
 			$target = json_decode($this->ReadAttributeString('registerVariable'),true); // Soll-Zustand  RegisterMessage
 			$current = $this->GetMessageList (); // Ist-Zustand RegisterMessage
+			if ($debug) {
+				$this->LogMessage('object-id to register:'. implode('-',array_keys($target)),KL_NOTIFY);
+				$this->LogMessage('currently registered:'. implode('-',array_keys($current)),KL_NOTIFY);
+			}
 
-			$this->LogMessage('Target:'. implode('-',array_keys($target)),KL_NOTIFY);
-			$this->LogMessage('Current:'. implode('-',array_keys($current)),KL_NOTIFY);
-
-
-			if ($register) { // RegisterMessage anpasse
+			if ($register) { // RegisterMessage anpassen
 				foreach(array_diff_key($target,$current) as $key => $element){
 					$this->RegisterMessage($key, VM_UPDATE);
-					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('var to observe: '.$key,KL_NOTIFY);
+					if ($debug) $this->LogMessage('var to observe: '.$key,KL_NOTIFY);
 				}
 				foreach(array_diff_key($current,$target) as $key => $element){
 					$this->UnregisterMessage($key, VM_UPDATE);
-					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('remove from observe: '.$key,KL_NOTIFY);
+					if ($debug) $this->LogMessage('remove from observe: '.$key,KL_NOTIFY);
 				}
 			} else {
 				foreach($current as $key => $element){
 					$this->UnregisterMessage($key, VM_UPDATE);
-					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('remove from observe: '.$key,KL_NOTIFY);
+					if ($debug) $this->LogMessage('remove from observe: '.$key,KL_NOTIFY);
 				}
 				$this->WriteAttributeString('registerVariable',json_encode(array()));
 			}
@@ -243,17 +239,6 @@ declare(strict_types=1);
 			}
 		}
 
-/*		public function sendTime(){
-			$data['DataID'] = '{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}';
-			$data['PacketType'] = 3;
-            $data['QualityOfService'] = 0;
-            $data['Retain'] = false;
-            $data['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic').'/CustomSend';
-            $data['Payload'] = $Text;
-			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
-			$this->LogMessage('mod_nspanel:'.json_encode($data, JSON_UNESCAPED_SLASHES),KL_NOTIFY);			
-		}
-*/
 		private function Send(string $Text)
 		{
 		
@@ -264,7 +249,7 @@ declare(strict_types=1);
             $data['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic').'/CustomSend';
             $data['Payload'] = $Text;
 			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
-			$this->LogMessage('Send: '.$Text,KL_NOTIFY);
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text,KL_NOTIFY);
 		}
 
 		private function LoadEntry(string $page) {
@@ -287,7 +272,7 @@ declare(strict_types=1);
 					$values[0]["id$columnNumber"] = "$element";
 					$columnNumber++;
 				}
-				$this->LogMessage('Select: '.json_encode($entry),KL_NOTIFY);
+				//$this->LogMessage('Select: '.json_encode($entry),KL_NOTIFY);
 				$this->UpdateFormField("showPageColumns", "columns", json_encode($entry));
 				$this->UpdateFormField("showPageColumns", "values", json_encode($values));
 			}
@@ -299,7 +284,7 @@ declare(strict_types=1);
 			foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
 				$name[(IPS_GetObject($id))['ObjectIdent']]=$id;
 			}
-			$this->LogMessage('Keys: '.implode('-',array_keys($name)),KL_NOTIFY);
+			//$this->LogMessage('Keys: '.implode('-',array_keys($name)),KL_NOTIFY);
 			$cnt=0;
 
 			while (array_key_exists($save_name."pages$cnt",$name) || array_key_exists($save_name."assignment$cnt",$name)) {
@@ -348,7 +333,7 @@ declare(strict_types=1);
 		// }
 
 		private function PanelActionToggle(bool $toggle) {
-			$this->LogMessage('PanelActionToggle',KL_NOTIFY);
+			//$this->LogMessage('PanelActionToggle',KL_NOTIFY);
 			if ($toggle) {
 				$this->UpdateFormField("value", "enabled", false);
 				$this->UpdateFormField("maxstep", "enabled", false);
@@ -359,7 +344,7 @@ declare(strict_types=1);
 		}
 
 		private function PanelActionReset(string $info) {
-			$this->LogMessage($info,KL_NOTIFY);
+			//$this->LogMessage($info,KL_NOTIFY);
 			$this->UpdateFormField("value", "enabled", true);
 			$this->UpdateFormField("maxstep", "enabled", true);
 		}
@@ -447,13 +432,13 @@ declare(strict_types=1);
 				switch ($changePage) {
 					case self::FWD:
 						$currentPage=$subPanelPage[($subPanelPagePos+1)%$subPanelPageLength];
-						$this->LogMessage("Value2Page (v) next Page $currentPage",KL_NOTIFY);
+						if ($debug) $this->LogMessage("next Page $currentPage",KL_NOTIFY);
 			
 						break;
 					case self::RWD:
 						$subPanelPagePos = ($subPanelPagePos-1)%$subPanelPageLength < 0 ?  $subPanelPageLength-1 : ($subPanelPagePos-1)%$subPanelPageLength;
 						$currentPage = $subPanelPage[$subPanelPagePos];
-						$this->LogMessage("Value2Page (r) prev Page $currentPage subPanelPagePos $subPanelPagePos",KL_NOTIFY);
+						if ($debug) $this->LogMessage("prev Page $currentPage subPanelPagePos $subPanelPagePos",KL_NOTIFY);
 						break;
 						}
 
@@ -485,15 +470,7 @@ declare(strict_types=1);
 			if(array_key_exists($currentPage,$readData)){
 				foreach ($readData[$currentPage] as $element) {
 					$objectId=$element['objectId'];
-					$this->LogMessage('page: ' . $currentPage . ', Read: objectId: '.$objectId,KL_NOTIFY);
-
-					// if (array_key_exists($element['objectId'],$Page)) {
-					// 	$objectId = $Page[$element['objectId']];
-					// 	if ($debug) $this->LogMessage("readData for Page $currentPage object (".$objectId.") from field:".$element['objectId'].' result to field:'.$element['resultField'],KL_NOTIFY);
-					// } else {
-					// 	$this->LogMessage("readData Page $currentPage, couldn't find  column ".$element['objectId'],KL_NOTIFY);
-					// 	continue;
-					// }
+					if ($debug) $this->LogMessage('page: ' . $currentPage . ', Read: objectId: '.$objectId,KL_NOTIFY);
 
 					if (array_key_exists($element['resultField'],$Page)) { 
 						if (IPS_VariableExists($objectId) || IPS_LinkExists($objectId)) {
@@ -678,14 +655,14 @@ declare(strict_types=1);
 									# ( gefilterter Aufrufe, bspw popupNotify: vent,buttonPress2,109,notifyAction,yes)
 
 									if (array_key_exists($result[1],$panelPage) && !(array_key_exists($result[1],$panelAction) && (array_key_exists($result[2],$panelAction[$result[1]]) || array_key_exists($result[2].':'.$result[3],$panelAction[$result[1]]) ))) { // Aufruf ($result[1]) exists in $panelPage and not in $panelAction-> call page
- 										$this->LogMessage('call page -> ' . $result[1],KL_NOTIFY);
+ 										if ($debug) $this->LogMessage('call page -> ' . $result[1],KL_NOTIFY);
 										$this->sendMqtt_CustomSend($this->Value2Page(self::GO,intval($result[1])));
 										$this->registerVariableToMessageSink(true);
 									} else {  //  $result[1] exists in $panelAction -> call Action
 										if (array_key_exists($result[1],$panelAction) ) {
 											if ($debug) $this->LogMessage($result[1].' defined in $panelAction', KL_NOTIFY);
 											if (array_key_exists($result[2],$panelAction[$result[1]]) || array_key_exists($result[2].':'.$result[3],$panelAction[$result[1]])) {
-												$this->LogMessage('found '.$result[2],KL_NOTIFY);
+												if ($debug) $this->LogMessage('found '.$result[2],KL_NOTIFY);
 												
 												if (array_key_exists($result[2].':'.$result[3],$panelAction[$result[1]])) {
 													# gefilterte $panelAction gefunden, aus $result[2]:$result[3]
@@ -787,18 +764,6 @@ declare(strict_types=1);
 			
 			# Bereich elements
 
-			// foreach($panelPage as $key => $element) {
-			// 	$this->LogMessage('key: '.$key,KL_NOTIFY);
-			// 	foreach($element as $key2 => $element2) {
-			// 		$this->LogMessage(' --:'.$key2,KL_NOTIFY);
-			// 		if ($key2 == 'payload') {
-			// 			$this->LogMessage(' --:'.implode('#',$element2),KL_NOTIFY);
-			// 		}
-			// 		// foreach($element2 as $key3 => $element3) {
-			// 		// 	$this->LogMessage(' --:'.$key3,KL_NOTIFY);
-			// 		// }
-			// 	}
-			// }
 			reset($panelPage);
 
 			foreach ($Form['elements'] as $keyLayer0 => $elementLayer0) {
