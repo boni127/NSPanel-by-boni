@@ -1,6 +1,6 @@
 # NSPanelConfig
 
-Dieses Mdoul bindet das Sonoff NSP-Panel (EU / US) mit der lovelace UI Symcon ein.
+Dieses Modul bindet das Sonoff NSP-Panel (EU / US) mit der lovelace UI in Symcon ein.
 
 ### Inhaltsverzeichnis
 
@@ -189,30 +189,22 @@ Im Aktion-Bereich gibt es einen Listhelper. Hier können die Spalten der einzeln
 
 ### 5. Statusvariablen und Profile
 
-Die Statusvariablen/Kategorien werden automatisch angelegt. Das Löschen einzelner kann zu Fehlfunktionen führen.
 
 #### Statusvariablen
 
-Name   | Typ     | Beschreibung
------- | ------- | ------------
-       |         |
-       |         |
+Aktuell keine
 
 #### Profile
 
-Name   | Typ
------- | -------
-       |
-       |
+Aktuell keine
 
 ### 6. WebFront
 
 Die Funktionalität, die das Modul im WebFront bietet.
 
+Aktuell keine.
+
+
 ### 7. PHP-Befehlsreferenz
 
-`boolean DBNSP_BeispielFunktion(integer $InstanzID);`
-Erklärung der Funktion.
-
-Beispiel:
-`DBNSP_BeispielFunktion(12345);`
+Aktuell keine.
