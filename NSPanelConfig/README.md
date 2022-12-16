@@ -14,12 +14,12 @@ Dieses Modul bindet das Sonoff NSP-Panel (EU / US) mit der lovelace UI in Symcon
 
 ### 1. Funktionsumfang
 
-* flexible Darstellung beliebiger Menüseten in beliebieger Schachtelung auf dem Display
-* Bildschrimschoner mit Uhrzeit / Datumsanzeige
-* frei konfigurierbare Variableneinbindung us Symcon, um Inhalte von Variablen auf dem Display darzustellen
-* anlegen von Aktoionen, um RequestActions / Scripte / Scripte mit Parametern aufzurufen
+* flexible Darstellung beliebiger Menüebenen in beliebiger Schachtelung auf dem Display
+* Bildschirmschoner mit Uhrzeit / Datumsanzeige
+* frei konfigurierbare Variableneinbindung aus Symcon, um Inhalte von Variablen auf dem Display darzustellen
+* anlegen von Aktionen, um RequestActions / Scripte / Scripte mit Parametern aufzurufen
 
-Aktuell werden der Temp. Sensor, die Tasten sowie die Relais weder abgerafgtg noch angesteuert.
+Aktuell werden der Temp. Sensor, die Tasten sowie die Relais weder abgefragt noch angesteuert.
 
 ### 2. Voraussetzungen
 
@@ -27,8 +27,7 @@ Aktuell werden der Temp. Sensor, die Tasten sowie die Relais weder abgerafgtg no
 
 ### 3. Software-Installation
 
-* Über den Module Store das 'NSPanelConfig'-Modul installieren.
-* Alternativ über das Module Control folgende URL hinzufügen
+* Über das Module Control folgende URL hinzufügen https://github.com/boni127/NSPanel-by-boni.git
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
@@ -39,13 +38,13 @@ __Bedienung__:
 
 Die Ansteuerung des Displays erfolgt über die nativen Befehle für das NSPanel, die auf https://docs.nspanel.pky.eu und https://github.com/jobr99/nspanel-lovelace-ui dokumentiert sind.
 
-Die Instanzkonfiguration gliedert ich in den Konfigurations und Aktions-Bereich, via MQTT Topic wird die ID des zu steuernden NSPanels konfiguriert.
-Der Bereich Screensaver ist weitestgehend selbsterkläernd und wird mit Werten vorbelegt.
+Die Instanzkonfiguration gliedert sich in den Konfigurations- und Aktions-Bereich, via MQTT Topic wird die ID des zu steuernden NSPanels konfiguriert.
+Der Bereich Screensaver ist weitestgehend selbsterklärend und wird mit Werten vorbelegt.
 
 Die drei Tabellen legen die 
 
-* Seitendefinitionn
-* Wertezuweiungen
+* Seitendefinition
+* Wertzuweisungen
 * Aktionszuweisungen 
 
 an.
@@ -54,11 +53,11 @@ an.
 
 ![Seitendefinitionen](./seitendefinitionen.png)
 
-* **ID** (1) definiert die ID der darzustellenden Seite, die Zahl dart zwischen 0 und  9999 liegen, um Konflikte mit Object-ID's in Symcon zu vermeiden
+* **ID** (1) definiert die ID der darzustellenden Seite, die Zahl darf zwischen 0 und  9999 liegen, um Konflikte mit Object-ID's in Symcon zu vermeiden
 * **Ebene** (2) legt die Ebene der Seite fest, ein leerer Eintrag stellt die Hauptebene da.  Wertebereich 1-9999. Dieser Eintrag wird auch zum Rücksprung zur 
 übergeordneten Ebene genutzt, es wird zu der Seite und Ebene gesprungen, die hier angegeben wird
 * **zurück zu** (3) definiert die Rücksprungebene, ist hier nichts definiert wird zur ersten Seite der Hauptebene zurückgesprungen.
-* **Tpye** (4) legt den Seitentyp fest, cardEntities, cardGrid, cardMedia, ....
+* **Typ** (4) legt den Seitentyp fest, cardEntities, cardGrid, cardMedia, ....
 * **Eintrag** (5) legt den Inhalt der Seite fest, lovelave ui Konfigurationsstring
 
 Ein Beispiel:
@@ -71,7 +70,7 @@ ID   | Ebene  | zurück | Typ | Eintrag
 1104 | 1      |        |pageType~cardGrid    |entityUpd~Szenen\~2\|1\~light\~1102\~\~17299\~Szene 1\~1\~...
 1105 | 1      |        |pageType~cardGrid    |entityUpd~Szenen\~1\|0\~light\~1108\~\~17299\~Szene 6\~1\~light\~1109\~\~17299\~Szene 7\~1
 
-Die erste dargestellte Seite hat die ID **1**, von hier ausgehend wechseln die Navigationselemente am oberen Rand des Display zu den Seiten **2**, **10**, und wieder auf die **1**.
+Die erste dargestellte Seite hat die ID **1**, von hier ausgehend wechseln die Navigationselemente am oberen Rand des Displays zu den Seiten **2**, **10**, und wieder auf die **1**.
 Seite **1** enthält einen Sprung auf die  Seite **1104**. Gekennzeichnet durch den Eintrag in der Spalte *Ebene* wird hier zwischen den Seite **1104** und **1105** gewechselt. Der
 Rücksprung in die übergeordnete Ebene erfolgt ebenfalls über den Eintrag *Ebene* zur Seite **1**
 
@@ -98,13 +97,13 @@ Infos zur Syntax des lovelace ui ist hier https://docs.nspanel.pky.eu und https:
 Über die Tabelle Wertzuweisung werden die Verknüpfungen der Symcon Objekte mit den einzelnen Seiten auf den Panel definiert.
 
 * **Variable** : Objekt-ID der IPS Variable, die auf dem Display dargestellt werden soll
-* **Trenner** : das Lovelace UI Element numbers erwartet einen Wertebereich (akt. Wert\|Min\|Max) durch *\|* getrennt. Hier kann der Trenner festgelegt werden. Bislang habe ich aber nur das Pipe-Symbol als Trenner gefunden
-* **formatiert** : fragt die im IPS Variablenporfil hinterlegte Einheit mit ab
+* **Trenner** : das Lovelace UI Element numbers erwartet einen Wertebereich (akt. Wert\|Min\|Max) durch \| getrennt. Hier kann der Trenner festgelegt werden. Bislang habe ich aber nur das Pipe-Symbol als Trenner gefunden
+* **formatiert** : fragt die im IPS Variablenprofil hinterlegte Einheit mit ab
 * **Ergebnisspalte** : Ziel für den Wert im Konfigurationsstring des Displays
 
 ##### Beispiel:
 
-Im IPS ist ein Dimmer und ein Switch angelegt, der die Helligkeit des Dimmers ist in IPS Variable 10007, der Status des Switch in 30691 definiert.
+Im IPS ist ein Dimmer und ein Switch angelegt, die Helligkeit des Dimmers ist in der IPS Variable 10007, der Status des Switch in 30691 definiert.
 
 Mit dieser Seiten Definition wird ein Switch und ein Slider auf dem NSPanel angezeigt
 
@@ -131,10 +130,10 @@ Interaktionen mit dem Display senden einen Antwortstring an IPS. Ist der Switch 
 * **Seite/ Objekt** : ID des Objektes oder der aufgerufenen Seite
 * **result** : Antwortstring des Elements
 * **Aktion** : Auswahl der zu startenden Aktion: RequestAktion, RunScript, RunScriptEx, Aufruf einer Displayseite
-* **toggle** : Abfrage einer boolschen Variable und Wechsel des Wertes, um bespielsweise über einen Button auf einer cardGrid eine Lampe ein und auszuschalten.
+* **toggle** : Abfrage einer boolschen Variable und Wechsel des Wertes, um beispielsweise über einen Button auf einer cardGrid eine Lampe ein- und auszuschalten.
 Wird **toggle** gesetzt, erfolgt für die nachfolgenden Felder **maxstep** und **value** keine Auswertung mehr
 * **maxstep** : begrenzt den Wert auf eine  mit **maxstep** definierte Schrittweite. Beispiel Lautstärkeregler. Aktuelle Lautstärke 7, **maxstep** ist auf 5 eingestellt,
-der Slider für die Lautstärke auf Display wird auf 80 eugestellt, über **maxstep** wird die Lautstärle  auf 12 (7+5) begrenzt. Wird **maxstep** gesetzt, erfolgt für das nachfolgende Feld **value** keine Auswertung mehr
+der Slider für die Lautstärke auf dem Display wird auf 80 eingestellt, über **maxstep** wird die Lautstärke jedoch auf 12 (7+5) begrenzt. Wird **maxstep** gesetzt, erfolgt für das nachfolgende Feld **value** keine Auswertung mehr
 * **value** : Wert, der an IPS übermittelt werden soll, wenn dieser von dem im Antwortstring empfangenden Wert abweichen soll
 
 
@@ -158,7 +157,7 @@ Nun wird mit der Betätigung des Buttons das Script aufgerufen
 
 Beispiel:
 
-Steuerung eines Rollos mit Shelly, über die Variable *Rollo* des Modules von Kai Schnittcher kann das Rollo die Aktionen Stop (2), Open (0), Close (4) ausführen. 
+Steuerung eines Rollos mit Shelly, über die Variable *Rollo* des Moduls von Kai Schnittcher kann das Rollo die Aktionen Stop (2), Open (0), Close (4) ausführen. 
 
 Bei der Betätigung des elemets *shutter* auf dem NSPanel liefert das Panel folgende Informationen an das Modul
 
@@ -183,9 +182,9 @@ down   |        | RequestAction | 18163         |        |         | 4
 
 ### Hilfreiches
 
-Im Aktion-Bereich gibt es einen Listhelper. Hier können die Spalten der einzelnen Seite dargestellt werden, um einfacher die entsprechende Spalte im lovelace ui Konfigstring zu finden
+Im Aktion-Bereich gibt es einen Listhelper. Hier können die Spalten der einzelnen Seite dargestellt werden, um einfacher die entsprechende Spalte im lovelace ui Konfig-String zu finden
 
-Über die beiden Buttons Send lassen sich zum Testen Konfig-strings an das Display senden, über Save und Load kann die Aktuelle Konfiguraion gespeichert und wieder geladen werden.
+Über die beiden Buttons Send lassen sich zum Testen Konfig-Strings an das Display senden, über Save und Load kann die aktuelle Konfiguration gespeichert und wieder geladen werden.
 
 ### 5. Statusvariablen und Profile
 
