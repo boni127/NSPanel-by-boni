@@ -33,6 +33,18 @@
                         "caption": "aktiv" 
                     }
                     ]
+                },
+                {
+                    "type" : "CheckBox",
+                    "name" : "sc_acceptMultiClicks",
+                    "caption" : "accept multiclicks"
+                },
+                {
+                    "type" : "NumberSpinner",
+                    "name" : "sc_multiClickWaitTime",
+                    "caption" : "time to wait for multiClicks in ms",
+                    "minimum" : 250,
+                    "maximum" : 2500
                 }
             ]
         },
@@ -196,7 +208,7 @@
                             "visible": true,
                             "add" : "0",
                             "edit" : {
-                                "type": "NumberSpinner",
+                                "type": "ValidationTextBox",
                                 "width" : "200px",
                                 "minimum": 0,
                                 "maximum": 60000
