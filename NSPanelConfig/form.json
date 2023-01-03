@@ -23,28 +23,81 @@
                     "type" : "RowLayout",
                     "items" : [
                     {
+                        "type" :"CheckBox", 
+                        "name": "sc_active", 
+                        "caption": "aktiv",
+                        "width": "200px",
+                        "onChange" : "IPS_RequestAction($id,'toggleSc_active',$sc_active);"
+
+                    },
+                    {
                         "type": "ValidationTextBox",
                         "name": "sc",
                         "caption": "Screensaver"
-                    },
-                    {
-                        "type" :"CheckBox", 
-                        "name": "sc_active", 
-                        "caption": "aktiv" 
                     }
                     ]
                 },
                 {
-                    "type" : "CheckBox",
-                    "name" : "sc_acceptMultiClicks",
-                    "caption" : "accept multiclicks"
+                    "type" : "RowLayout",
+                    "items" : [
+                        {
+                            "type" : "CheckBox",
+                            "name" : "sc_acceptMultiClicks",
+                            "caption" : "accept multiclicks",
+                            "width": "200px",
+                            "onChange" : "IPS_RequestAction($id,'toggleSc_multiClick',$sc_acceptMultiClicks);"
+                        },
+                        {
+                            "type" : "NumberSpinner",
+                            "name" : "sc_multiClickWaitTime",
+                            "caption" : "time to wait for multiClicks in ms",
+                            "minimum" : 250,
+                            "maximum" : 2500
+                        }
+                   ]
                 },
                 {
-                    "type" : "NumberSpinner",
-                    "name" : "sc_multiClickWaitTime",
-                    "caption" : "time to wait for multiClicks in ms",
-                    "minimum" : 250,
-                    "maximum" : 2500
+                    "type" : "CheckBox",
+                    "name" : "sc_acceptSwipes",
+                    "caption" : "accept swipes"
+                },
+                {
+                    "type" : "RowLayout",
+                    "items" : [
+                        {
+                            "type" : "CheckBox",
+                            "name" : "sc_notifyActive",
+                            "caption" : "notify",
+                            "width": "200px",
+                            "onChange" : "IPS_RequestAction($id,'toggleSc_notifyActive',$sc_notifyActive);"
+                        },
+                        {
+                            "type" : "SelectObject",
+                            "name" : "sc_notifyHeading",
+                            "caption" : "heading"
+                        },
+                        {
+                            "type" : "SelectObject",
+                            "name" : "sc_notifyText",
+                            "caption" : "text"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Options",
+            "items" : [
+                {
+                    "type" : "CheckBox",
+                    "name" : "option73",
+                    "caption" : "detach buttons from relais"
+                },
+                {
+                    "type" : "CheckBox",
+                    "name" : "option0",
+                    "caption" : "Save power state and use after restart"
                 }
             ]
         },
