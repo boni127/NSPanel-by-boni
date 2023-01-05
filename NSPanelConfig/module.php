@@ -58,6 +58,10 @@ declare(strict_types=1);
 			$this->RegisterPropertyString('panelActionValuesArray','{}'); # Aktionszuweisung der einzelnen Seiten
 			$this->RegisterAttributeBoolean('ScrSaverDoubleClickActive',0); # true wenn Wartezeit für Multiklick aus Screensaver
 			$this->RegisterAttributeString('ScrSaverResult',0); # Nimmt rc vom Screensaver-Exit auf
+			// Relais
+			$this->RegisterVariableBoolean("Power1","Power1",'~Switch');
+			$this->RegisterVariableBoolean("Power2","Power2",'~Switch');
+			
 
 
 			// Status der Instanz speichern
@@ -77,6 +81,10 @@ declare(strict_types=1);
 		{
 			//Never delete this line!
 			parent::ApplyChanges();
+
+			// Power-Buttons
+			$this->EnableAction("Power1");
+			$this->EnableAction("Power2");
 
 			// Werte aus Konfigurations-Formular laden und für die interne Nutzung anpassen
 			$panelPageDst = array ();
@@ -222,7 +230,23 @@ declare(strict_types=1);
 
 		public function RequestAction($Ident, $Value) {
 			switch ($Ident) {
-				case "ScrSaverDoubleClickTimer":
+				case "Power1":
+					$this->SetValue("Power1",$Value);
+					if ($Value) {  
+						$this->switchRelais('Power1','On');
+					} else {  
+						$this->switchRelais('Power1','Off');
+					}  
+					break;
+					case "Power2":
+						$this->SetValue("Power2",$Value);
+						if ($Value) {  
+							$this->switchRelais('Power2','On');
+						} else {  
+							$this->switchRelais('Power2','Off');
+						}  
+						break;
+					case "ScrSaverDoubleClickTimer":
 					$this->ScrSaverDoubleClickTimer();
 					break;
 				case "RefreshDate":
@@ -335,7 +359,17 @@ declare(strict_types=1);
 			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Backlog: '.implode(';',$options),KL_NOTIFY);
 		}
 
-
+		private function switchRelais(string $port, string $Value) {
+			$data['DataID'] = '{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}';
+			$data['PacketType'] = 3;
+            $data['QualityOfService'] = 0;
+            $data['Retain'] = false;
+            $data['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic')."/$port";
+            $data['Payload'] = $Value;
+			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("Switch: $port to $Value",KL_NOTIFY);
+		
+		}
 		private function Send(string $Text)
 		{
 			$data['DataID'] = '{043EA491-0325-4ADD-8FC2-A30C8EEB4D3F}';
@@ -851,12 +885,34 @@ declare(strict_types=1);
 							}
 						} 
 
-							
-#----
-
-					}				
+					case 'stat/' . $this->ReadPropertyString('topic') . '/RESULT': 	
+						$payload = json_decode($data['Payload'],true);
+						if (array_key_exists('POWER1',$payload)) {
+							if ($payload['POWER1'] == 'ON') {
+								$this->SetValue('Power1',true);
+							} else {
+								$this->SetValue('Power1',false);
+							}
+						}
+						elseif (array_key_exists('POWER2',$payload)) {
+							if ($payload['POWER2'] == 'ON') {
+								$this->SetValue('Power2',true);
+							} else {
+								$this->SetValue('Power2',false);
+							}
+						} elseif (array_key_exists('Button1',$payload)) {
+							if (array_key_exists('Action',$payload['Button1'])) {
+								$this->blabal(array('','Button1','Action',$payload['Button1']['Action']));
+							}
+						} elseif (array_key_exists('Button2',$payload)) {
+							if (array_key_exists('Action',$payload['Button2'])) {
+								$this->blabal(array('','Button2','Action',$payload['Button2']['Action']));
+							}
+						}
+						$this->LogMessage('stat/RESULT/'.$data['Payload'],KL_NOTIFY);
+						break;
+				}				
 			}
-
 		}
 
 
