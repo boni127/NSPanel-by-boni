@@ -8,7 +8,27 @@
         {
             "type": "ExpansionPanel",
             "caption": "Screensaver",
-                "items": [   
+            "items" : [
+                {
+                "type" : "RowLayout",
+                "items": [  
+                    {
+                        "type" : "NumberSpinner",
+                        "name" : "sc_customScrPageTime",
+                        "caption" : "call page after s",
+                        "minimim" : 0,
+                        "onEdit" : "IPS_RequestAction($id,'toggleSc_customScrPage',$sc_customScrPageTime);"
+                    },
+                    {
+                        "type" : "Select", 
+                        "name" : "sc_customScrPage",
+                        "width" : "75px", 
+                        "caption" : "Seite",
+                        "options" : [
+                        ]
+                    }
+                    ]
+                },    
                 {
                     "type": "ValidationTextBox",
                     "name": "sc_dimMode",

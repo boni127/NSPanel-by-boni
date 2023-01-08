@@ -44,6 +44,8 @@ declare(strict_types=1);
 			$this->RegisterPropertyBoolean('sc_notifyActive',0);
 			$this->RegisterPropertyInteger('sc_notifyHeading',0);
 			$this->RegisterPropertyInteger('sc_notifyText',0);
+			$this->RegisterPropertyInteger('sc_customScrPageTime',0); # Wartezeit bis zur Aktivierung des customScreenSavers: Aufruf einer speziellen Seite
+			$this->RegisterPropertyInteger('sc_customScrPage',1); # Wartezeit bis zur Aktivierung des customScreenSavers: Aufruf einer speziellen Seite			
 			$this->RegisterPropertyBoolean('option73',0);
 			$this->RegisterPropertyBoolean('option0',1);
 			$this->RegisterAttributeInteger('currentPage',0);   # aktuell dargestellte seite
@@ -67,8 +69,9 @@ declare(strict_types=1);
 			// Status der Instanz speichern
 			$this->RegisterAttributeBoolean("Activated",false);
 
-			$this->RegisterTimer("Refresh",10000, 'IPS_RequestAction('.$this->InstanceID.',\'RefreshDate\',true);');
+			$this->RegisterTimer("Refresh",0, 'IPS_RequestAction('.$this->InstanceID.',\'RefreshDate\',true);');
 			$this->RegisterTimer("ScrSaverDoubleClick",0, 'IPS_RequestAction('.$this->InstanceID.',\'ScrSaverDoubleClickTimer\',true);');
+			$this->RegisterTimer("callCustomScrPage",0,'IPS_RequestAction('.$this->InstanceID.',\'callCustomScrPage\',true);');
 		}
 
 		public function Destroy()
@@ -117,8 +120,6 @@ declare(strict_types=1);
 			$varActionAssignmentDst = array();
 			$varActionAssignmentSrc = json_decode($this->ReadPropertyString('panelActionValuesArray'),true);			
 			foreach ($varActionAssignmentSrc as $actionEntry => $actionListEntry) {
-//				$cnt=0;
-
 				foreach ($actionListEntry['panelActionValues'] as $actionValueKey => $actionValueEntry ) {
 					$filterDefinition='';
 					if (array_key_exists('filter',$actionValueEntry)) {
@@ -151,11 +152,15 @@ declare(strict_types=1);
 			$this->sendMqtt_CustomSend(array('pageType~pageStartup'));	
 
 			// Screensaver aktiv, aktivere Datumsroutine
-			if ($this->ReadPropertyBoolean('sc_active')) {
-				$this->RefreshDate(true);
-			} else {
-				$this->RefreshDate(false);
-			}
+			// if ($this->ReadPropertyBoolean('sc_active')) {
+			// 	$this->RefreshDate(true);
+			// } else {
+			// 	$this->RefreshDate(false);
+			// }
+
+			// set sc_customScrPageTime
+			$this->LogMessage('sc_customScrPageTime'.$this->ReadPropertyInteger('sc_customScrPageTime'),KL_NOTIFY);
+			$this->SetTimerInterval('callCustomScrPage',$this->ReadPropertyInteger('sc_customScrPageTime')*1000);
 
 			// Status der Instanz auf gespeicherten Wert setzen (beim Laden des Moduls)
 			if ($this->ReadAttributeBoolean("Activated")) {
@@ -229,6 +234,7 @@ declare(strict_types=1);
 		}
 
 		public function RequestAction($Ident, $Value) {
+			#$this->LogMessage('RequestAction:'.$Ident.' - '.$Value,KL_NOTIFY);
 			switch ($Ident) {
 				case "Power1":
 					$this->SetValue("Power1",$Value);
@@ -248,6 +254,9 @@ declare(strict_types=1);
 						break;
 					case "ScrSaverDoubleClickTimer":
 					$this->ScrSaverDoubleClickTimer();
+					break;
+				case "callCustomScrPage":
+					$this->callCustomScrPage();
 					break;
 				case "RefreshDate":
 					$this->RefreshDate($Value);
@@ -279,11 +288,29 @@ declare(strict_types=1);
 				case "toggleSc_notifyActive";
 					$this->toggleSc_notifyActive($Value);
 					break;
+				case "toggleSc_customScrPage";
+					$this->toggleSc_customScrPage($Value);
+					break;
 				case "SwapModuleStatus":
 					$this->SwapModuleStatus();
 					break;
 			}  
 		}
+
+		private function callCustomScrPage () {
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('customScr call Page '.$this->ReadPropertyInteger('sc_customScrPage'),KL_NOTIFY);
+			$this->SetTimerInterval('callCustomScrPage',0);
+			$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadPropertyInteger('sc_customScrPage')));
+		}
+
+	private function toggleSc_customScrPage (int $Value) {
+			if ($Value>0) {
+				$this->UpdateFormField("sc_customScrPage", "enabled", true);
+			} else {
+				$this->UpdateFormField("sc_customScrPage", "enabled", false);
+			}
+		}
+
 
 		private function toggleSc_active (bool $active) {
 			if ($active) {
@@ -328,7 +355,7 @@ declare(strict_types=1);
 			$this->WriteAttributeBoolean('ScrSaverDoubleClickActive',0);
 			$this->LogMessage('ScrSaverDoubleClick time stopped',KL_NOTIFY);
 			$this->SetTimerInterval('ScrSaverDoubleClick',0);
-			$this->blabal(array('','screensaver','bExit',$this->ReadAttributeString('ScrSaverResult')));
+			$this->doPanelAction(array('','screensaver','bExit',$this->ReadAttributeString('ScrSaverResult')));
 		}
 
 		private function SendBacklog()
@@ -660,7 +687,7 @@ declare(strict_types=1);
 		}
 
 
-		private function blabal (array $result) {
+		private function doPanelAction (array $result) {
 			$debug = $this->ReadPropertyBoolean("PropertyVariableDebug"); 
 			$panelAction = json_decode($this->ReadAttributeString('actionAssignment'),true);
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
@@ -774,7 +801,7 @@ declare(strict_types=1);
 						$this->LogMessage("no value available for requestAction",KL_ERROR);
 					}
 				} else {
-					$this->LogMessage('RequestAction for ' . $result[1] . ' not available',KL_NOTIFY);
+					$this->LogMessage('RequestAction## for ' . $result[1] . ' not available',KL_NOTIFY);
 			
 				}
 			} #
@@ -821,8 +848,8 @@ declare(strict_types=1);
 
 							$this->sendMqtt_CustomSend($this->Value2Page(self::MAIN,-1));
 							$this->registerVariableToMessageSink(true);
-						} elseif (preg_match('/sleepReached,card(Entities|Grid|Thermo)/', $gotResult)) { #sleepReached
-							if ( $this->ReadPropertyBoolean('sc_active') && strlen(trim($this->ReadPropertyString('sc'))) > 0 ) {   
+						} elseif (preg_match('/sleepReached,card(Entities|Grid|Thermo|Media)/', $gotResult)) { #sleepReached
+							if ($this->ReadPropertyBoolean('sc_active') && strlen(trim($this->ReadPropertyString('sc'))) > 0 ) {   
 								$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc')));
 								$this->RefreshDate(true);
 								if ($this->ReadPropertyBoolean('sc_notifyActive') && ($this->ReadPropertyInteger('sc_notifyHeading')>1 || $this->ReadPropertyInteger('sc_notifyText')>1)) {
@@ -832,6 +859,10 @@ declare(strict_types=1);
 							}
 	
 						} elseif (preg_match('/buttonPress2,(.*)/', $gotResult, $matches)) { #buttonPress2
+							# restart callCustomScrPage timer
+							if ($this->ReadPropertyInteger('sc_customScrPageTime')>0) {
+								$this->SetTimerInterval('callCustomScrPage',$this->ReadPropertyInteger('sc_customScrPageTime')*1000);
+							}
 							$gotResultBp=$matches[1];
 							if (preg_match('/screensaver,bExit,(\d+)/',$gotResultBp,$matches)) { #screensaver
 								if ($this->ReadPropertyBoolean('sc_acceptMultiClicks') && !$this->ReadAttributeBoolean('ScrSaverDoubleClickActive')) {
@@ -856,7 +887,7 @@ declare(strict_types=1);
 									$this->registerVariableToMessageSink(true); # RegisterMessage für Var der aktuellen Seite durchführen   
 #									$this->WriteAttributeBoolean('sc_state_active',0);
 								} else {
-									$this->blabal(array('','screensaver',$matches[1],''));
+									$this->doPanelAction(array('','screensaver',$matches[1],''));
 								}
 							} elseif (preg_match('/popup.*,bExit/', $gotResult)) { # popup.*,bExit
 								$this->sendMqtt_CustomSend($this->Value2Page(self::UP,$this->ReadAttributeInteger('currentPage')));
@@ -880,7 +911,9 @@ declare(strict_types=1);
 								# Fibaro up 4, close 0, stop 2
 							
 								if (preg_match('/event,buttonPress2,(\d*),([^,]*),*([(yes|no)\d]*)/', $payload['CustomRecv'],$result) ) {
-									$this->blabal($result);
+									$this->LogMessage('R:'.implode('--',$result),KL_NOTIFY);
+#									$this->doPanelAction($result);
+									$this->doPanelAction(array('',intval($result[1]),$result[2],$result[3]));
 								}
 							}
 						} 
@@ -902,14 +935,14 @@ declare(strict_types=1);
 							}
 						} elseif (array_key_exists('Button1',$payload)) {
 							if (array_key_exists('Action',$payload['Button1'])) {
-								$this->blabal(array('','Button1','Action',$payload['Button1']['Action']));
+								$this->doPanelAction(array('','Button1','Action',$payload['Button1']['Action']));
 							}
 						} elseif (array_key_exists('Button2',$payload)) {
 							if (array_key_exists('Action',$payload['Button2'])) {
-								$this->blabal(array('','Button2','Action',$payload['Button2']['Action']));
+								$this->doPanelAction(array('','Button2','Action',$payload['Button2']['Action']));
 							}
 						}
-						$this->LogMessage('stat/RESULT/'.$data['Payload'],KL_NOTIFY);
+						#$this->LogMessage('stat/RESULT/'.$data['Payload'],KL_NOTIFY);
 						break;
 				}				
 			}
@@ -946,6 +979,15 @@ declare(strict_types=1);
 										}
 										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_notifyText') {
 											if (!$this->ReadPropertyBoolean('sc_notifyActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
+										}
+										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_customScrPage') {
+											if ($this->ReadPropertyInteger('sc_customScrPageTime') == 0 ) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
+											$cnt=0;
+											foreach ($panelPage as $pageKey => $pageElement) {
+												$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['options'][$cnt]['caption'] = $pageKey;
+												$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['options'][$cnt]['value'] = $pageKey;
+												$cnt++;
+											}
 										}
 									}
 								}
@@ -1089,7 +1131,7 @@ declare(strict_types=1);
 				$this->LogMessage("enabled",KL_NOTIFY);
 				$this->WriteAttributeBoolean("Activated",true);
 				$this->UpdateFormField("activated","value",true);
-				$this->SetTimerInterval("Refresh",5000);
+#				$this->SetTimerInterval("Refresh",5000);
 				}
 			else {
 				$this->LogMessage("disabled",KL_NOTIFY);
