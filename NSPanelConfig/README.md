@@ -92,6 +92,24 @@ Hier dazu das zweite Beispiel:
 Das war es auch schon, nun kann in der Seite navigiert werden und über die Checkbox *Hue Lampe* via RequestAction(30691,\<Value\>) . ( \<Value\> ist beim Element *light* 0 oder 1) das erste Object geschaltet werden.
 Infos zur Syntax des lovelace ui ist hier https://docs.nspanel.pky.eu und https://github.com/jobr99/nspanel-lovelace-ui zu finden.
 
+##### popupNotify
+
+Beim direkten Aufruf der Infoseite pageType~popupNotify aus dem Menü ergibt sich folgende Besonderheit: Die Seite popupNotofy hat am oberen Bildschirmrand keine Navigationstasten, sondern nur ein Exit. Somit muß in der Seitendefinition eine Rücksprungadresse entweder über *Ebene* oder *zurück* angegeben werden. Fehlen diese Angeben erfolgt der Rücksprung zur ersten Menuseite.
+
+Beispiel:
+
+ID   | Ebene  | zurück | Typ | Eintrag
+---- | ------ | -------| --- | -----
+1    |        |        |pageType~cardEntities|entityUpd~Leuchten\~1\|1\~light\~30691\~\~17299\~Hue Lampe\~0\~...
+2    |        |        |pageType~cardMedia   |entityUpd~Bad\~2\|\~41321\~\~17690\~Title-line\~17690\~author-line...
+10   |        |        |pageType~cardGrid    |entityUpd~Radio\~1\|1\~light\~1101\~\~17299\~Fav1\~1\~....
+1104 | 1      |        |pageType~cardGrid    |entityUpd~Szenen\~2\|1\~light\~1102\~\~17299\~Szene 1\~1\~...
+1105 | 1      |        |pageType~cardGrid    |entityUpd~Szenen\~1\|0\~light\~1108\~\~17299\~Szene 6\~1\~light\~1109\~\~17299\~Szene 7\~1
+3    |        | 2      |pageType~popupNotify |entityUpdateDetail\~9999\~Hinweis\~23456\~Ja\~17289\~Nein\~34131\~Info\~17299\~0
+
+Wird hier nun Seite **3** aufgerufen, führt das Verlassen von Seite **3** direkt zu Seite **2**.
+
+
 #### Wertzuweisung
 
 Über die Tabelle Wertzuweisung werden die Verknüpfungen der Symcon Objekte mit den einzelnen Seiten auf den Panel definiert.

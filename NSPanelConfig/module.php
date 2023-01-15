@@ -44,8 +44,9 @@ declare(strict_types=1);
 			$this->RegisterPropertyBoolean('sc_notifyActive',0);
 			$this->RegisterPropertyInteger('sc_notifyHeading',0);
 			$this->RegisterPropertyInteger('sc_notifyText',0);
-			$this->RegisterPropertyInteger('sc_customScrPageTime',0); # Wartezeit bis zur Aktivierung des customScreenSavers: Aufruf einer speziellen Seite
-			$this->RegisterPropertyInteger('sc_customScrPage',1); # Wartezeit bis zur Aktivierung des customScreenSavers: Aufruf einer speziellen Seite			
+			$this->RegisterPropertyBoolean('defaultPageActive',false); # Aktivierung des customScreenSavers
+			$this->RegisterPropertyInteger('defaultPageTime',30); # Wartezeit bis zur Aktivierung des customScreenSavers: Aufruf einer speziellen Seite
+			$this->RegisterPropertyInteger('defaultPage',-1); # Wartezeit bis zur Aktivierung des customScreenSavers: Aufruf einer speziellen Seite			
 			$this->RegisterPropertyBoolean('option73',0);
 			$this->RegisterPropertyBoolean('option0',1);
 			$this->RegisterAttributeInteger('currentPage',0);   # aktuell dargestellte seite
@@ -151,16 +152,21 @@ declare(strict_types=1);
 
 			$this->sendMqtt_CustomSend(array('pageType~pageStartup'));	
 
-			// Screensaver aktiv, aktivere Datumsroutine
-			// if ($this->ReadPropertyBoolean('sc_active')) {
-			// 	$this->RefreshDate(true);
-			// } else {
-			// 	$this->RefreshDate(false);
-			// }
+			# Screensaver aktiv, aktivere Datumsroutine
+			if ($this->ReadPropertyBoolean('sc_active')) {
+				$this->RefreshDate(true);
+			} else {
+				$this->RefreshDate(false);
+			}
 
-			// set sc_customScrPageTime
-			$this->LogMessage('sc_customScrPageTime'.$this->ReadPropertyInteger('sc_customScrPageTime'),KL_NOTIFY);
-			$this->SetTimerInterval('callCustomScrPage',$this->ReadPropertyInteger('sc_customScrPageTime')*1000);
+			// set defaultPageTime
+
+			if ($this->ReadPropertyBoolean('defaultPageActive') && ($this->ReadPropertyInteger('defaultPage')>=0)) {
+				$this->SetTimerInterval('callCustomScrPage',$this->ReadPropertyInteger('defaultPageTime')*1000);
+			}
+
+			# Status Bildschrimschoner auf inaktiv setzen:
+			$this->WriteAttributeBoolean('sc_state_active',0);
 
 			// Status der Instanz auf gespeicherten Wert setzen (beim Laden des Moduls)
 			if ($this->ReadAttributeBoolean("Activated")) {
@@ -288,9 +294,11 @@ declare(strict_types=1);
 				case "toggleSc_notifyActive";
 					$this->toggleSc_notifyActive($Value);
 					break;
-				case "toggleSc_customScrPage";
-					$this->toggleSc_customScrPage($Value);
+				case "toggleDefaultPageActive";
+					$this->toggleDefaultPageActive($Value);
 					break;
+				case "deletePagePanelPageConf";
+					$this->deletePagePanelPageConf();
 				case "SwapModuleStatus":
 					$this->SwapModuleStatus();
 					break;
@@ -298,16 +306,30 @@ declare(strict_types=1);
 		}
 
 		private function callCustomScrPage () {
-			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('customScr call Page '.$this->ReadPropertyInteger('sc_customScrPage'),KL_NOTIFY);
 			$this->SetTimerInterval('callCustomScrPage',0);
-			$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadPropertyInteger('sc_customScrPage')));
+
+			if ($this->ReadAttributeBoolean('sc_state_active')) { # Wenn screensaver schon aktiv ist, current-Page auf die defaultPage setzen
+				if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('set currentpage to defaultPage: '.$this->ReadPropertyInteger('defaultPage'),KL_NOTIFY);
+				$this->WriteAttributeInteger('currentPage',$this->ReadPropertyInteger('defaultPage'));				
+			} else {
+				if ($this->ReadAttributeInteger('currentPage') == $this->ReadPropertyInteger('defaultPage')) {
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('default page is already open',KL_NOTIFY);
+				} else {
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('call default page: '.$this->ReadPropertyInteger('defaultPage'),KL_NOTIFY);
+					$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadPropertyInteger('defaultPage')));
+					$this->registerVariableToMessageSink(true);
+				}
+			}
+
 		}
 
-	private function toggleSc_customScrPage (int $Value) {
-			if ($Value>0) {
-				$this->UpdateFormField("sc_customScrPage", "enabled", true);
+		private function toggleDefaultPageActive (bool $Value) {
+			if ($Value) {
+				$this->UpdateFormField("defaultPage", "enabled", true);
+				$this->UpdateFormField("defaultPageTime", "enabled", true);
 			} else {
-				$this->UpdateFormField("sc_customScrPage", "enabled", false);
+				$this->UpdateFormField("defaultPage", "enabled", false);
+				$this->UpdateFormField("defaultPageTime", "enabled", false);
 			}
 		}
 
@@ -338,6 +360,10 @@ declare(strict_types=1);
 			}
 		}
 
+		private function deletePagePanelPageConf () {
+			$this->UpdateFormField("defaultPage","value",-1);
+
+		}
 		private function RefreshDate (bool $active) {
 //			$id=$this->InstanceID;
 			if ($active) { # nächsten Refreshzeitpunkt
@@ -552,8 +578,12 @@ declare(strict_types=1);
 			} elseif ($changePage == self::UP) { 
 				# Wenn key return existiert, dann dort hin springen, wenn nicht zu main springen, wenn main nicht exisitiert auf die erste Seite springen
 				$currentPage = $this->ReadAttributeInteger('currentPage');
+				if (array_key_exists($showPage,$panelPage) && ($showPage == $this->ReadPropertyInteger('defaultPage'))) { # Aufruf der defaultPage
+					if ($debug) $this->LogMessage("call default page: ".$this->ReadPropertyInteger('defaultPage'),KL_NOTIFY);
+					$currentPage = $showPage;
 
-				if (array_key_exists($showPage,$panelPage)){
+				} elseif (array_key_exists($showPage,$panelPage) && ($showPage != $currentPage)){ # pruefe, ob nicht die Seite selbst wieder aufgerufen wird (popupNotify) verhindere loop
+					if ($debug) $this->LogMessage('call page'.$currentPage,KL_NOTIFY);
 					$currentPage = $showPage;
 				} elseif (array_key_exists('return',$panelPage[$currentPage])){
 					if ($debug) $this->LogMessage("return to page $currentPage",KL_NOTIFY);
@@ -683,6 +713,11 @@ declare(strict_types=1);
 				$this->LogMessage("nothing defined for page $currentPage in readData",KL_NOTIFY);
 			}	
 			$this->WriteAttributeString('registerVariable',json_encode($registerVariable));
+			# call default-page deaktivieren, wenn popupNotify aufgerufen wird
+			if (preg_match('/~popupNotify/',$panelPage[$currentPage]['payload'][0])) {
+				if ($debug) $this->LogMessage('disable callCustomScrPage',KL_NOTIFY);
+				$this->SetTimerInterval('callCustomScrPage',0);
+			}
 			return array($panelPage[$currentPage]['payload'][0],implode('~',$Page));
 		}
 
@@ -851,6 +886,8 @@ declare(strict_types=1);
 						} elseif (preg_match('/sleepReached,card(Entities|Grid|Thermo|Media)/', $gotResult)) { #sleepReached
 							if ($this->ReadPropertyBoolean('sc_active') && strlen(trim($this->ReadPropertyString('sc'))) > 0 ) {   
 								$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc')));
+								$this->WriteAttributeBoolean('sc_state_active',1);
+								$this->LogMessage('state sc: active',KL_NOTIFY);
 								$this->RefreshDate(true);
 								if ($this->ReadPropertyBoolean('sc_notifyActive') && ($this->ReadPropertyInteger('sc_notifyHeading')>1 || $this->ReadPropertyInteger('sc_notifyText')>1)) {
 									$this->sendMqtt_CustomSend(array($this->generateNotifyString()));
@@ -860,8 +897,8 @@ declare(strict_types=1);
 	
 						} elseif (preg_match('/buttonPress2,(.*)/', $gotResult, $matches)) { #buttonPress2
 							# restart callCustomScrPage timer
-							if ($this->ReadPropertyInteger('sc_customScrPageTime')>0) {
-								$this->SetTimerInterval('callCustomScrPage',$this->ReadPropertyInteger('sc_customScrPageTime')*1000);
+							if ($this->ReadPropertyBoolean('defaultPageActive')) {
+								$this->SetTimerInterval('callCustomScrPage',$this->ReadPropertyInteger('defaultPageTime')*1000);
 							}
 							$gotResultBp=$matches[1];
 							if (preg_match('/screensaver,bExit,(\d+)/',$gotResultBp,$matches)) { #screensaver
@@ -879,20 +916,19 @@ declare(strict_types=1);
 								$this->RefreshDate(false);
 								$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadAttributeInteger('currentPage')));
 								$this->registerVariableToMessageSink(true); # RegisterMessage für Var der aktuellen Seite durchführen   
-#								$this->WriteAttributeBoolean('sc_state_active',0);
+								$this->WriteAttributeBoolean('sc_state_active',0);
 							} elseif (preg_match('/screensaver,(swipe(Left|Right|Up|Down))/',$gotResultBp,$matches)) { #screensaver swipe
 								if ($this->ReadPropertyBoolean('sc_acceptSwipes')) {
 									$this->RefreshDate(false);
 									$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadAttributeInteger('currentPage')));
 									$this->registerVariableToMessageSink(true); # RegisterMessage für Var der aktuellen Seite durchführen   
-#									$this->WriteAttributeBoolean('sc_state_active',0);
+									$this->WriteAttributeBoolean('sc_state_active',0);
 								} else {
 									$this->doPanelAction(array('','screensaver',$matches[1],''));
 								}
 							} elseif (preg_match('/popup.*,bExit/', $gotResult)) { # popup.*,bExit
 								$this->sendMqtt_CustomSend($this->Value2Page(self::UP,$this->ReadAttributeInteger('currentPage')));
 								$this->registerVariableToMessageSink(true);
-	
 							} elseif (preg_match('/card.*,bPrev/', $gotResult)) { # card.*,bPrev
 								$this->sendMqtt_CustomSend($this->Value2Page(self::RWD,0-1));
 								$this->registerVariableToMessageSink(true);
@@ -980,9 +1016,15 @@ declare(strict_types=1);
 										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_notifyText') {
 											if (!$this->ReadPropertyBoolean('sc_notifyActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
 										}
-										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_customScrPage') {
-											if ($this->ReadPropertyInteger('sc_customScrPageTime') == 0 ) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
+										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'defaultPageTime') {
+											if (!$this->ReadPropertyBoolean('defaultPageActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
+										}
+										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'defaultPage') {
+											if (!$this->ReadPropertyBoolean('defaultPageActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
 											$cnt=0;
+											$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['options'][$cnt]['caption'] = '-';
+											$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['options'][$cnt]['value'] = -1;
+											$cnt++;
 											foreach ($panelPage as $pageKey => $pageElement) {
 												$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['options'][$cnt]['caption'] = $pageKey;
 												$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['options'][$cnt]['value'] = $pageKey;

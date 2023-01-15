@@ -13,19 +13,26 @@
                 "type" : "RowLayout",
                 "items": [  
                     {
-                        "type" : "NumberSpinner",
-                        "name" : "sc_customScrPageTime",
-                        "caption" : "call page after s",
-                        "minimim" : 0,
-                        "onEdit" : "IPS_RequestAction($id,'toggleSc_customScrPage',$sc_customScrPageTime);"
+                        "type" :"CheckBox", 
+                        "name": "defaultPageActive", 
+                        "caption": "call default page",
+                        "width": "200px",
+                        "onChange" : "IPS_RequestAction($id,'toggleDefaultPageActive',$defaultPageActive);"
+
                     },
                     {
                         "type" : "Select", 
-                        "name" : "sc_customScrPage",
+                        "name" : "defaultPage",
                         "width" : "75px", 
-                        "caption" : "Seite",
+                        "caption" : "page",
                         "options" : [
                         ]
+                    },
+                    {
+                        "type" : "NumberSpinner",
+                        "name" : "defaultPageTime",
+                        "caption" : "time to wait, in s",
+                        "minimum" : 5
                     }
                     ]
                 },    
@@ -45,7 +52,7 @@
                     {
                         "type" :"CheckBox", 
                         "name": "sc_active", 
-                        "caption": "aktiv",
+                        "caption": "activate screensaver",
                         "width": "200px",
                         "onChange" : "IPS_RequestAction($id,'toggleSc_active',$sc_active);"
 
@@ -127,6 +134,7 @@
             "caption": "Seitendefinition",
             "add": true,
             "delete": true,
+            "onDelete" : "IPS_RequestAction($id,'deletePagePanelPageConf',0);",
             "changeOrder" : true,
             "columns": [
                 {
