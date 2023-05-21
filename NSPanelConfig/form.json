@@ -240,6 +240,20 @@
                                         }
                                     },
                                     {
+                                        "caption": "Wert",
+                                        "name": "valuetype",
+                                        "width": "120px",
+                                        "add": 1,
+                                        "edit": {
+                                            "type": "Select",
+                                            "options" : [
+                                                {"caption" : "Variablenname", "value" : 0},
+                                                {"caption" : "Variableninhalt", "value" : 1}
+                                            ],
+                                            "onChange": "IPS_RequestAction($id,'toggleFormatted_active',$valuetype);"
+                                        }
+                                    },
+                                    {
                                         "caption": "Trenner",
                                         "name": "split",
                                         "width": "120px",
@@ -255,6 +269,16 @@
                                         "add": false,
                                         "edit": {
                                             "type": "CheckBox"
+                                        }
+                                    },
+                                    {
+                                        "caption": "Länge",
+                                        "name": "valueLength",
+                                        "width": "100px",
+                                        "add" : "",
+                                        "edit": {
+                                            "type": "ValidationTextBox",
+                                            "validate": "^[0-9]*$" 
                                         }
                                     },
                                     {

@@ -115,8 +115,10 @@ Wird hier nun Seite **3** aufgerufen, führt das Verlassen von Seite **3** direk
 Über die Tabelle Wertzuweisung werden die Verknüpfungen der Symcon Objekte mit den einzelnen Seiten auf den Panel definiert.
 
 * **Variable** : Objekt-ID der IPS Variable, die auf dem Display dargestellt werden soll
+* **Wert** : der Variableninhalt (default) oder der Variablenwert wird ausgelesen ( hilfreich, wenn bspw. Variablen mit dem Namen einer Stationstaste beim Radio ausgelesen werden sollen) 
 * **Trenner** : das Lovelace UI Element numbers erwartet einen Wertebereich (akt. Wert\|Min\|Max) durch \| getrennt. Hier kann der Trenner festgelegt werden. Bislang habe ich aber nur das Pipe-Symbol als Trenner gefunden
 * **formatiert** : fragt die im IPS Variablenprofil hinterlegte Einheit mit ab
+* **Länge** : Anzahl der Zeichen, die aus der Variable oder dem Variablennamen ausgelsen werden. Ist die Länge des Wertes oder des Variablennamen länger als **Länge** wird ab **Länge** abgeschnitten und um '...' ergänzt 
 * **Ergebnisspalte** : Ziel für den Wert im Konfigurationsstring des Displays
 
 ##### Beispiel:

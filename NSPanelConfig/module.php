@@ -113,6 +113,12 @@ declare(strict_types=1);
 					if (array_key_exists('split', $pageEntry) && strlen(trim($pageEntry['split']))>0) $varAssignmentDst[$listEntry['panelPage']][$cnt]['split'] = $pageEntry['split'];
 					if (array_key_exists('formatted', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['formatted'] = $pageEntry['formatted'];
 					if (array_key_exists('resultField', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['resultField'] = $pageEntry['resultField'];
+					if (array_key_exists('valueLength', $pageEntry) && intval($pageEntry['valueLength']) > 0) $varAssignmentDst[$listEntry['panelPage']][$cnt]['valueLength'] = intval($pageEntry['valueLength']);
+					if (array_key_exists('valuetype', $pageEntry)) {
+						$varAssignmentDst[$listEntry['panelPage']][$cnt]['valuetype'] = $pageEntry['valuetype'];
+					} else {
+						$varAssignmentDst[$listEntry['panelPage']][$cnt]['valuetype'] = 0;
+					}
 					$cnt++;
 				 }
 			}
@@ -297,6 +303,9 @@ declare(strict_types=1);
 				case "toggleDefaultPageActive";
 					$this->toggleDefaultPageActive($Value);
 					break;
+				case "toggleFormatted_active";
+					$this->toggleFormatted_active($Value);
+					break;
 				case "deletePagePanelPageConf";
 					$this->deletePagePanelPageConf();
 				case "SwapModuleStatus":
@@ -360,6 +369,16 @@ declare(strict_types=1);
 			}
 		}
 
+		private function toggleFormatted_active (int $active) {
+			if ($active==0) {
+				$this->UpdateFormField("formatted", "visible", false);
+				$this->UpdateFormField("split", "visible", false);
+			} else {
+				$this->UpdateFormField("formatted", "visible", true);
+				$this->UpdateFormField("split", "visible", true);
+			}
+		}
+
 		private function deletePagePanelPageConf () {
 			$this->UpdateFormField("defaultPage","value",-1);
 
@@ -407,7 +426,7 @@ declare(strict_types=1);
 				array_push($options,'SETOPTION73 0');
 			}
 
-            $data['Payload'] = implode(';',$options);
+            $data['Payload'] = utf8_encode(implode(';',$options));
 			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
 			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Backlog: '.implode(';',$options),KL_NOTIFY);
 		}
@@ -418,7 +437,7 @@ declare(strict_types=1);
             $data['QualityOfService'] = 0;
             $data['Retain'] = false;
             $data['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic')."/$port";
-            $data['Payload'] = $Value;
+            $data['Payload'] = utf8_encode($Value);
 			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
 			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("Switch: $port to $Value",KL_NOTIFY);
 		
@@ -430,9 +449,13 @@ declare(strict_types=1);
             $data['QualityOfService'] = 0;
             $data['Retain'] = false;
             $data['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic').'/CustomSend';
-            $data['Payload'] = $Text;
+            $data['Payload'] = utf8_encode($Text);
 			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
-			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text,KL_NOTIFY);
+			$text2 = utf8_encode($Text);
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.$Text[0].'-'.$Text[1].'-'.$Text[2].'-'.$Text[3].'-'.$Text[4].'-'.$Text[5].'-'.$Text[6].'-'.$Text[7].'-'.$Text[8],KL_NOTIFY);
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.ord($Text[0]).'-'.ord($Text[1]).'-'.ord($Text[2]).'-'.ord($Text[3]).'-'.ord($Text[4]).'-'.ord($Text[5]).'-'.ord($Text[6]).'-'.ord($Text[7]).'-'.ord($Text[8]),KL_NOTIFY);
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$text2.'|'.ord($text2[0]).'-'.ord($text2[1]).'-'.ord($text2[2]).'-'.ord($text2[3]).'-'.ord($text2[4]).'-'.ord($text2[5]).'-'.ord($text2[6]).'-'.ord($text2[7]).'-'.ord($text2[8]),KL_NOTIFY);
+
 		}
 
 		private function generateNotifyString() {
@@ -547,7 +570,7 @@ declare(strict_types=1);
 				$dataMQTT['Retain'] = false;
 				$dataMQTT['Topic'] = 'cmnd/'.$this->ReadPropertyString('topic').'/CustomSend';
 				foreach ($payload as $value ) {
-					$dataMQTT['Payload'] = $value;
+					$dataMQTT['Payload'] = utf8_encode($value);
 					$this->SendDataToParent(json_encode($dataMQTT, JSON_UNESCAPED_SLASHES));
 					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('send:'.$dataMQTT['Topic'].'/'.$dataMQTT['Payload'],KL_NOTIFY);
 				}
@@ -646,7 +669,6 @@ declare(strict_types=1);
 
 			
 			$readData = json_decode($this->ReadAttributeString("varAssignment"),true);
-
 			// $readData = array (
 			// 	0 =>   array ( 	array ( 'objectId' => 4, 'resultfield' => 8 ), 
 			// 					array ( 'split' => '|', 'objectId' => 10, 'resultfield' => 14 ), 
@@ -676,22 +698,35 @@ declare(strict_types=1);
 							if ($objectType == 6) {
 								$objectId = (IPS_GetLink($objectId))['TargetID'];
 							}
+							# valuetype 0: Namen der Variablen auslsesen, 1: Wert der Variablen auslesen (default)
+							if ($element['valuetype'] == 1) {
+								# GetValueFormatted?
 
-							# GetValueFormatted
-							if (array_key_exists('formatted',$element) && $element['formatted']) {
-								$objectValue=GetValueFormatted($objectId);
-							} else {
-								$objectValue=GetValue($objectId);
+								if (array_key_exists('formatted',$element) && $element['formatted']) {
+									$objectValue=GetValueFormatted($objectId);
+								} else {
+									$objectValue=GetValue($objectId);
+								}
+								# Wert auf 0 setzen, wenn Var vom Typ bool
+								if (is_bool($objectValue)) {
+									$objectValue= ($objectValue) ? 1:0;
+								}
+
+								if ($debug) $this->LogMessage("getValue: ".$objectValue,KL_NOTIFY);
+							} elseif ($element['valuetype'] == 0) {
+								$objectValue= IPS_GetName($objectId);
+								if ($debug) $this->LogMessage("getName: ".$objectValue,KL_NOTIFY);
 							}
-								
+
+							if (array_key_exists('valueLength',$element)) {
+								if (strlen("$objectValue") > $element['valueLength']) {
+									if ($debug) $this->LogMessage('cut value from '.$objectValue.' to '.substr("$objectValue",0,$element['valueLength']).'... ('.$element['valueLength'].')',KL_NOTIFY );
+									$objectValue = substr("$objectValue",0,$element['valueLength']).'...';
+								}
+							}
+
 							$registerVariable[$objectId]=0; // Var für MessageSink vormerken
 
-							# Wert auf 0 setzen, wenn Var vom Typ bool
-							if (is_bool($objectValue)) {
-								$objectValue= ($objectValue) ? 1:0;
-							}
-
-							if ($debug) $this->LogMessage("getValue: ".$objectValue,KL_NOTIFY);
 							if (array_key_exists('split',$element)) {
 								$value_array=explode($element['split'],$Page[$element['resultField']]);
 								if ($debug) $this->LogMessage("change from: ".$Page[$element['resultField']],KL_NOTIFY);
@@ -1140,7 +1175,8 @@ declare(strict_types=1);
 				}
 			}
 
-			
+#						$this->LogMessage(print_r($Form),KL_NOTIFY);
+
 
 			return json_encode($Form);
 
