@@ -973,6 +973,15 @@ declare(strict_types=1);
 							} elseif (preg_match('/card.*,bUp/', $gotResult)) { # card.*,bUp
 								$this->sendMqtt_CustomSend($this->Value2Page(self::UP,-1));
 								$this->registerVariableToMessageSink(true);
+							} elseif (preg_match('/bNext,.*/', $gotResult)) { # V51 bNext
+								$this->sendMqtt_CustomSend($this->Value2Page(self::FWD,0-1));
+								$this->registerVariableToMessageSink(true);
+							} elseif (preg_match('/bPrev,.*/', $gotResult)) { # V51 bPrev
+								$this->sendMqtt_CustomSend($this->Value2Page(self::RWD,0-1));
+								$this->registerVariableToMessageSink(true);
+							} elseif (preg_match('/bUp,.*/', $gotResult)) { # V51 bUp
+								$this->sendMqtt_CustomSend($this->Value2Page(self::UP,-1));
+								$this->registerVariableToMessageSink(true);
 							} else {
 								$debug = $this->ReadPropertyBoolean("PropertyVariableDebug"); 
 	
