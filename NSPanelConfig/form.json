@@ -1,9 +1,28 @@
 {
     "elements": [
         {
-            "type": "ValidationTextBox",
-            "name": "topic",
-            "caption": "MQTT Topic"
+            "type" : "RowLayout",
+            "items": [  
+                {
+                    "type": "ValidationTextBox",
+                    "name": "topic",
+                    "caption": "MQTT Topic"
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name" : "PanelIp",
+                    "caption" : "IP-Address",
+                    "enabled" : false,
+                    "width" : "250px"
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name" : "PanelVersion",
+                    "caption" : "Panel Version",
+                    "enabled" : false,
+                    "width" : "150px"
+                }
+            ]
         },
         {
             "type": "ExpansionPanel",
@@ -46,6 +65,33 @@
                     "name": "sc_timeout",
                     "caption": "Screensaver Timeout"
                 },
+
+                {
+                    "type": "ExpansionPanel",
+                    "caption": "alternative DimMode",
+                    "items" : [
+                        {   "type": "Label", 
+                            "caption": "this dimMode's can be called via the command DBNSP_SetDimMode <0|1|2|3>. Option 0 is the default dimMode defined above. Option 1 dimMode 1 and so on" 
+                        },
+                        {
+                            "type" : "ValidationTextBox",
+                            "name" : "sc_dimMode_cmd1",
+                            "caption" : "ScreenSaver DimMode 1"
+                        },
+                        {
+                            "type" : "ValidationTextBox",
+                            "name" : "sc_dimMode_cmd2",
+                            "caption" : "ScreenSaver DimMode 2"
+                        },
+                        {
+                            "type" : "ValidationTextBox",
+                            "name" : "sc_dimMode_cmd3",
+                            "caption" : "ScreenSaver DimMode 3"
+                        }
+                    ]
+                },
+
+                
                 {
                     "type" : "RowLayout",
                     "items" : [

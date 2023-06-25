@@ -35,6 +35,10 @@ declare(strict_types=1);
 			$this->RegisterPropertyBoolean("PropertyVariableDebug",0); 
 			$this->RegisterPropertyString('topic','nspanel_');
 			$this->RegisterPropertyString('sc_dimMode','dimmode~20~100');
+			$this->RegisterPropertyString('sc_dimMode_cmd1','dimmode~0~100');
+			$this->RegisterPropertyString('sc_dimMode_cmd2','dimmode~20~100');
+			$this->RegisterPropertyString('sc_dimMode_cmd3','dimmode~50~100');
+
 			$this->RegisterPropertyString('sc_timeout','timeout~15');
 			$this->RegisterPropertyBoolean('sc_active',1);
 			$this->RegisterPropertyString('sc','pageType~screensaver');
@@ -64,8 +68,8 @@ declare(strict_types=1);
 			// Relais
 			$this->RegisterVariableBoolean("Power1","Power1",'~Switch');
 			$this->RegisterVariableBoolean("Power2","Power2",'~Switch');
-			
-
+			$this->RegisterAttributeString('PanelIp','on next reboot avail.');
+			$this->RegisterAttributeString('PanelVersion','--');
 
 			// Status der Instanz speichern
 			$this->RegisterAttributeBoolean("Activated",false);
@@ -171,7 +175,7 @@ declare(strict_types=1);
 				$this->SetTimerInterval('callCustomScrPage',$this->ReadPropertyInteger('defaultPageTime')*1000);
 			}
 
-			# Status Bildschrimschoner auf inaktiv setzen:
+			# Status Bildschirmschoner auf inaktiv setzen:
 			$this->WriteAttributeBoolean('sc_state_active',0);
 
 			// Status der Instanz auf gespeicherten Wert setzen (beim Laden des Moduls)
@@ -242,6 +246,38 @@ declare(strict_types=1);
 					if ($debug) $this->LogMessage('var to observe: '.$key,KL_NOTIFY);
 				}
 				$this->WriteAttributeString('registerVariable',json_encode(array()));
+			}
+		}
+
+		public function SetDimMode(int $Mode) {
+			$this->LogMessage("set dimMode to ".$Mode,KL_NOTIFY);
+			switch ($Mode) {
+			case 0:
+				$this->Send($this->ReadPropertyString('sc_dimMode'));
+				break;
+			case 1:
+				if (empty($this->ReadPropertyString('sc_dimMode_cmd1'))) {
+					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_NOTIFY);
+				} else {
+					$this->Send($this->ReadPropertyString('sc_dimMode_cmd1'));
+				}
+				break;
+			case 2:
+				if (empty($this->ReadPropertyString('sc_dimMode_cmd2'))) {
+					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_NOTIFY);
+				} else {
+					$this->Send($this->ReadPropertyString('sc_dimMode_cmd2'));
+				}
+				break;
+			case 3:
+				if (empty($this->ReadPropertyString('sc_dimMode_cmd3'))) {
+					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_NOTIFY);
+				} else {
+					$this->Send($this->ReadPropertyString('sc_dimMode_cmd3'));
+				}
+				break;
+			default:
+				$this->LogMessage('unkown dimMode : '.$Mode,KL_ERROR);
 			}
 		}
 
@@ -452,9 +488,10 @@ declare(strict_types=1);
             $data['Payload'] = utf8_encode($Text);
 			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
 			$text2 = utf8_encode($Text);
-			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.$Text[0].'-'.$Text[1].'-'.$Text[2].'-'.$Text[3].'-'.$Text[4].'-'.$Text[5].'-'.$Text[6].'-'.$Text[7].'-'.$Text[8],KL_NOTIFY);
-			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.ord($Text[0]).'-'.ord($Text[1]).'-'.ord($Text[2]).'-'.ord($Text[3]).'-'.ord($Text[4]).'-'.ord($Text[5]).'-'.ord($Text[6]).'-'.ord($Text[7]).'-'.ord($Text[8]),KL_NOTIFY);
-			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$text2.'|'.ord($text2[0]).'-'.ord($text2[1]).'-'.ord($text2[2]).'-'.ord($text2[3]).'-'.ord($text2[4]).'-'.ord($text2[5]).'-'.ord($text2[6]).'-'.ord($text2[7]).'-'.ord($text2[8]),KL_NOTIFY);
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text,KL_NOTIFY);
+			#if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.$Text[0].'-'.$Text[1].'-'.$Text[2].'-'.$Text[3].'-'.$Text[4].'-'.$Text[5].'-'.$Text[6].'-'.$Text[7].'-'.$Text[8],KL_NOTIFY);
+			#if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.ord($Text[0]).'-'.ord($Text[1]).'-'.ord($Text[2]).'-'.ord($Text[3]).'-'.ord($Text[4]).'-'.ord($Text[5]).'-'.ord($Text[6]).'-'.ord($Text[7]).'-'.ord($Text[8]),KL_NOTIFY);
+			#if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$text2.'|'.ord($text2[0]).'-'.ord($text2[1]).'-'.ord($text2[2]).'-'.ord($text2[3]).'-'.ord($text2[4]).'-'.ord($text2[5]).'-'.ord($text2[6]).'-'.ord($text2[7]).'-'.ord($text2[8]),KL_NOTIFY);
 
 		}
 
@@ -884,8 +921,13 @@ declare(strict_types=1);
 		{
 			if ($this->ReadAttributeBoolean("Activated")) {
 				$data = json_decode($JSONString, true);
-
 				switch ($data['Topic']) {
+   					    #  tasmota/discovery/24D7EB0DC2D4/config
+						#Topic":"tele/tasmota_0DC2D4/INFO2
+					case 'tele/' . $this->ReadPropertyString('topic') . '/INFO2' :
+							$payload = json_decode($data['Payload'],true);
+							$this->WriteAttributeString('PanelIp',$payload['Info2']['IPAddress']);
+						break;
 					case 'tele/' . $this->ReadPropertyString('topic') . '/RESULT':
 
 						# Index der Hauptseiten aufbauen, Anzahl der Hauptseiten ermitteln 
@@ -905,7 +947,9 @@ declare(strict_types=1);
 						}
 
 						# startup
-						if (preg_match('/startup,\d+,(eu|us-p|us-l)/', $gotResult)) {
+						if (preg_match('/startup,(\d+),(eu|us-p|us-l)/', $gotResult,$matches)) {
+							# save Version 
+							$this->WriteAttributeString('PanelVersion',$matches[1].' '.$matches[2]);
 							# set options
 							$this->SendBacklog();
 							# config screensaver
@@ -1085,7 +1129,14 @@ declare(strict_types=1);
 
 					if ($elementLayer1 === 'RowLayout') {
 						foreach ($Form['elements'][$keyLayer0]['items'] as $keyLayer2 => $elementLayer2) {
+							#$this->LogMessage('keylayer2 '.$keyLayer2,KL_NOTIFY);
 							foreach ($Form['elements'][$keyLayer0]['items'][$keyLayer2] as $keyLayer3 => $elementLayer3) {
+								if ($elementLayer3 === 'PanelIp') {
+									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['value'] = $this->ReadAttributeString('PanelIp');
+								}
+								if ($elementLayer3 === 'PanelVersion') {
+									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['value'] = $this->ReadAttributeString('PanelVersion');
+								}
 								if ($elementLayer3 === 'panelPageValuesArray') {
 									foreach($elementLayer2['columns'] as $keyColumn => $columnsElement) {
 										if ($columnsElement['name'] == 'panelPage') { # Suche nach panelPage

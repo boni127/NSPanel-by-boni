@@ -39,7 +39,7 @@ __Bedienung__:
 Die Ansteuerung des Displays erfolgt über die nativen Befehle für das NSPanel, die auf https://docs.nspanel.pky.eu und https://github.com/jobr99/nspanel-lovelace-ui dokumentiert sind.
 
 Die Instanzkonfiguration gliedert sich in den Konfigurations- und Aktions-Bereich, via MQTT Topic wird die ID des zu steuernden NSPanels konfiguriert.
-Der Bereich Screensaver ist weitestgehend selbsterklärend und wird mit Werten vorbelegt.
+Der Bereich Screensaver ist weitestgehend selbsterklärend und wird mit Werten vorbelegt. Die alternativen DimModes sind weiter unten erläutert.
 
 Die drei Tabellen legen die 
 
@@ -205,6 +205,13 @@ down   |        | RequestAction | 18163         |        |         | 4
 Im Aktion-Bereich gibt es einen Listhelper. Hier können die Spalten der einzelnen Seite dargestellt werden, um einfacher die entsprechende Spalte im lovelace ui Konfig-String zu finden
 
 Über die beiden Buttons Send lassen sich zum Testen Konfig-Strings an das Display senden, über Save und Load kann die aktuelle Konfiguration gespeichert und wieder geladen werden.
+
+### ScreenSaver
+
+#### alternative DimMode's
+
+Über den Punkt alternative DimMode lassen sich 3 weitere dimModes definieren, die über das Kommando DBNSP_SetDimMode(<0\|1\|2\|3>) von extern aufgerufen werden können. Beispielsweise über einen  Wochenplan oder per Event bei Sonneauf- oder untergang.
+Der Parameter 0 ruft den unter dem Screensaver definierten DimMode auf; 1,2,3 die entsprechenden DimModes. Beim Start des Moduls wird immer der unter dem Screensaver definierte DimMode gesetzt.
 
 ### 5. Statusvariablen und Profile
 
