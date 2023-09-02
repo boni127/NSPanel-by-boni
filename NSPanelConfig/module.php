@@ -13,12 +13,11 @@
 # Funktion kann aus module.php ebenfalls entfernt werden, ist schon auskommentiert
 
 
-
-
 declare(strict_types=1);
+require_once __DIR__ . '/icon-mapping.php';
 	class NSPanelConfig extends IPSModule
 	{
-
+		use Icons;
 		const IGN  = -1;
 		const MAIN = 0;
 		const FWD  = 1;
@@ -34,10 +33,11 @@ declare(strict_types=1);
 			$this->ConnectParent('{C6D2AEB3-6E1F-4B2E-8E69-3A1A00246850}');
 			$this->RegisterPropertyBoolean("PropertyVariableDebug",0); 
 			$this->RegisterPropertyString('topic','nspanel_');
-			$this->RegisterPropertyString('sc_dimMode','dimmode~20~100');
-			$this->RegisterPropertyString('sc_dimMode_cmd1','dimmode~0~100');
-			$this->RegisterPropertyString('sc_dimMode_cmd2','dimmode~20~100');
-			$this->RegisterPropertyString('sc_dimMode_cmd3','dimmode~50~100');
+			$this->RegisterPropertyString('sc_dimMode','dimmode~20~100');   # Std DimMide
+			$this->RegisterPropertyString('sc_dimMode_cmd1','dimmode~0~100'); # alternativer DimMode 1
+			$this->RegisterPropertyString('sc_dimMode_cmd2','dimmode~20~100'); # alternativer DimMode 2
+			$this->RegisterPropertyString('sc_dimMode_cmd3','dimmode~50~100'); # alternativer DimMode 3
+			$this->RegisterAttributeInteger('sc_dimModeState',0); # aktiver DimMode 
 
 			$this->RegisterPropertyString('sc_timeout','timeout~15');
 			$this->RegisterPropertyBoolean('sc_active',1);
@@ -48,11 +48,18 @@ declare(strict_types=1);
 			$this->RegisterPropertyBoolean('sc_notifyActive',0);
 			$this->RegisterPropertyInteger('sc_notifyHeading',0);
 			$this->RegisterPropertyInteger('sc_notifyText',0);
+			$this->RegisterPropertyBoolean('sc_weatherActive',0);
+			$this->RegisterPropertyString('sc_weatherforecast','{}');
+			$this->RegisterPropertyString('sc_wc_assignIcons','{}');
+			$this->RegisterPropertyInteger('sc_powersafeTime',45);
+			$this->RegisterPropertyBoolean('sc_powersafeTime_active',1);
+			$this->RegisterPropertyString('sc_powersafeCmd','dimmode~0~50');
+
 			$this->RegisterPropertyBoolean('defaultPageActive',false); # Aktivierung des customScreenSavers
 			$this->RegisterPropertyInteger('defaultPageTime',30); # Wartezeit bis zur Aktivierung des customScreenSavers: Aufruf einer speziellen Seite
 			$this->RegisterPropertyInteger('defaultPage',-1); # Wartezeit bis zur Aktivierung des customScreenSavers: Aufruf einer speziellen Seite			
-			$this->RegisterPropertyBoolean('option73',0);
-			$this->RegisterPropertyBoolean('option0',1);
+			$this->RegisterPropertyBoolean('option73',0); # NsPanel Option
+			$this->RegisterPropertyBoolean('option0',1); # NsPanel Option
 			$this->RegisterAttributeInteger('currentPage',0);   # aktuell dargestellte seite
 			$this->RegisterAttributeString('panelPage','{}');   # Seitendefinition interne Nutzung
 			$this->RegisterAttributeString('varAssignment','{}'); # Wertzuweisung der einzelnen Seiten, interne Nutzung
@@ -77,6 +84,8 @@ declare(strict_types=1);
 			$this->RegisterTimer("Refresh",0, 'IPS_RequestAction('.$this->InstanceID.',\'RefreshDate\',true);');
 			$this->RegisterTimer("ScrSaverDoubleClick",0, 'IPS_RequestAction('.$this->InstanceID.',\'ScrSaverDoubleClickTimer\',true);');
 			$this->RegisterTimer("callCustomScrPage",0,'IPS_RequestAction('.$this->InstanceID.',\'callCustomScrPage\',true);');
+			$this->RegisterTimer("sc_powersafe",0,'IPS_RequestAction('.$this->InstanceID.',\'sc_powersafe\',true);');
+
 		}
 
 		public function Destroy()
@@ -205,6 +214,14 @@ declare(strict_types=1);
 			}
 		}
 
+		function listRegisteredVar() {
+
+			$current = $this->GetMessageList (); // Ist-Zustand RegisterMessage
+
+			$this->LogMessage('currently registered:'. implode('-',array_keys($current)),KL_NOTIFY);
+
+		}
+
 		private function registerVariableToMessageSink (bool $register ) {
 			# $register == true: RegisterMessage für alle auf der aktuellen Seite dargestellen Variablen durchführen  
 			# $register == false: UnregisterMeassge für alle in Attribute registerVariable vorgemerkten Varaiblen aufheben und Attribut registerVariable leeren
@@ -251,33 +268,54 @@ declare(strict_types=1);
 
 		public function SetDimMode(int $Mode) {
 			$this->LogMessage("set dimMode to ".$Mode,KL_NOTIFY);
+			$this->WriteAttributeInteger('sc_dimModeState',$Mode); # DimMode sichern
+			if ($Mode>0) $this->SetTimerInterval('sc_powersafe',0);  # Timer dimMode after Screensaver abschalten
+			if ($Mode==0) $this->ActivateDimModeTimer(); # DimMode Timer wieder aktivieren 
+
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("save dimModeState: $Mode",KL_NOTIFY);
 			switch ($Mode) {
 			case 0:
 				$this->Send($this->ReadPropertyString('sc_dimMode'));
 				break;
 			case 1:
 				if (empty($this->ReadPropertyString('sc_dimMode_cmd1'))) {
-					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_NOTIFY);
+					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
 				} else {
 					$this->Send($this->ReadPropertyString('sc_dimMode_cmd1'));
 				}
 				break;
 			case 2:
 				if (empty($this->ReadPropertyString('sc_dimMode_cmd2'))) {
-					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_NOTIFY);
+					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
 				} else {
 					$this->Send($this->ReadPropertyString('sc_dimMode_cmd2'));
 				}
 				break;
 			case 3:
 				if (empty($this->ReadPropertyString('sc_dimMode_cmd3'))) {
-					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_NOTIFY);
+					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
 				} else {
 					$this->Send($this->ReadPropertyString('sc_dimMode_cmd3'));
 				}
 				break;
 			default:
 				$this->LogMessage('unkown dimMode : '.$Mode,KL_ERROR);
+			}
+		}
+		
+		public function ActivateDimModeTimer(){
+			if ($this->ReadAttributeInteger('sc_dimModeState') == 0) { 
+				if ($this->ReadPropertyBoolean('sc_powersafeTime_active') && ($this->ReadPropertyInteger('sc_powersafeTime') > 0 )) {
+					$this->LogMessage('start DimModeTimer: '.$this->ReadPropertyInteger('sc_powersafeTime').' sec.',KL_NOTIFY);
+					$this->SetTimerInterval('sc_powersafe',1000*$this->ReadPropertyInteger('sc_powersafeTime'));
+					if (!empty($this->ReadPropertyString('sc_dimMode'))) {
+						$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode')));
+					}
+				} else {
+					$this->LogMessage('Dimmode after screensaver disabled or time = 0 sec', KL_NOTIFY);
+				}
+			} else {
+				$this->LogMessage('alternativ DimMode is set to '.$this->ReadAttributeInteger('sc_dimModeState').  ', DimMode after Screensaver is disabled', KL_NOTIFY);
 			}
 		}
 
@@ -292,15 +330,15 @@ declare(strict_types=1);
 						$this->switchRelais('Power1','Off');
 					}  
 					break;
-					case "Power2":
-						$this->SetValue("Power2",$Value);
-						if ($Value) {  
-							$this->switchRelais('Power2','On');
-						} else {  
-							$this->switchRelais('Power2','Off');
-						}  
-						break;
-					case "ScrSaverDoubleClickTimer":
+				case "Power2":
+					$this->SetValue("Power2",$Value);
+					if ($Value) {  
+						$this->switchRelais('Power2','On');
+					} else {  
+						$this->switchRelais('Power2','Off');
+					}  
+					break;
+				case "ScrSaverDoubleClickTimer":
 					$this->ScrSaverDoubleClickTimer();
 					break;
 				case "callCustomScrPage":
@@ -339,6 +377,9 @@ declare(strict_types=1);
 				case "toggleDefaultPageActive";
 					$this->toggleDefaultPageActive($Value);
 					break;
+				case "toggleSc_powersafeTime";
+					$this->toggleSc_powersafeTime($Value);
+					break;
 				case "toggleFormatted_active";
 					$this->toggleFormatted_active($Value);
 					break;
@@ -347,6 +388,13 @@ declare(strict_types=1);
 				case "SwapModuleStatus":
 					$this->SwapModuleStatus();
 					break;
+				case "sc_powersafe";
+					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('activate dimmode after screensaver',KL_NOTIFY);
+					$this->SetTimerInterval('sc_powersafe',0);
+					if (!empty($this->ReadPropertyString('sc_powersafeCmd'))) {
+						$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_powersafeCmd')));
+					}
+		
 			}  
 		}
 
@@ -378,6 +426,15 @@ declare(strict_types=1);
 			}
 		}
 
+		private function toggleSc_powersafeTime (bool $Value) {
+			if ($Value) {
+				$this->UpdateFormField("sc_powersafeTime", "enabled", true);
+				$this->UpdateFormField("sc_powersafeCmd", "enabled", true);
+			} else {
+				$this->UpdateFormField("sc_powersafeTime", "enabled", false);
+				$this->UpdateFormField("sc_powersafeCmd", "enabled", false);
+			}
+		}
 
 		private function toggleSc_active (bool $active) {
 			if ($active) {
@@ -419,13 +476,77 @@ declare(strict_types=1);
 			$this->UpdateFormField("defaultPage","value",-1);
 
 		}
-		private function RefreshDate (bool $active) {
+		function RefreshDate (bool $active) {
 //			$id=$this->InstanceID;
 			if ($active) { # nächsten Refreshzeitpunkt
 				$this->SetTimerInterval("Refresh",(60-date("s",time()))*1000);
 				$now_time = date("H:i", time());
 				$now_date = strftime("%A %d. %b %Y", time());
 				$this->sendMqtt_CustomSend(array("time~$now_time","date~$now_date"));
+				if ($this->ReadPropertyBoolean('sc_weatherActive')) {
+					#$this->LogMessage('sc_wc_assignIcons:'.$this->ReadPropertyString('sc_wc_assignIcons'),KL_NOTIFY);
+					#$this->LogMessage('sc_weatherforecast:'.$this->ReadPropertyString('sc_weatherforecast'),KL_NOTIFY);
+					$weatherIcons = json_decode($this->ReadPropertyString('sc_wc_assignIcons'),true);
+					$iconAssignment = array();
+					foreach ($weatherIcons as $element)  {
+						$iconAssignment[$element['assignment']]['icon'] = $this->icons[$element['icon']];
+						$iconAssignment[$element['assignment']]['color'] = $element['iconColor'];
+
+					}
+					#foreach ($iconAssignment as $e => $v) {
+					#	$this->LogMessage('#1#:'.$e.':'.$v['icon'].'-'.$v['color'],KL_NOTIFY);
+					#}
+					$weatherForecast = json_decode($this->ReadPropertyString('sc_weatherforecast'),true);
+					$weatherOutput = array('weatherUpdate');
+					foreach ($weatherForecast as $element) {
+						#foreach ($element as $key => $value) {
+						#	$this->LogMessage('-- key '.$key.' value: '.$value,KL_NOTIFY);
+						#}
+#						if (array_key_exists(GetValue($element['objectIdValueSymbol']),$weatherIcons)
+						$weatherOutput[] = '';
+						$weatherOutput[] = '';
+						# Wettersymbol
+						if ($element['objectIdValueSymbol']>1) {
+							if (array_key_exists(GetValue($element['objectIdValueSymbol']),$iconAssignment)) {
+								$weatherOutput[] = $iconAssignment[GetValue($element['objectIdValueSymbol'])]['icon'];
+								$weatherOutput[] = $iconAssignment[GetValue($element['objectIdValueSymbol'])]['color'];
+							} else {
+								$this->LogMessage('weather-symbol '.GetValue($element['objectIdValueSymbol']).' not defined in screensaver settings',KL_NOTIFY);
+								$weatherOutput[] = 'X';
+								$weatherOutput[] = 63488;
+							}
+						} else {
+							$weatherOutput[] = '';
+							$weatherOutput[] = 0;
+						}
+						# Beschriftung 
+						if ($element['caption']>1) {
+							if ($element['captionFrom'] !== '' && $element['captionLength'] !== '' ) {
+								#$this->LogMessage("-1- ".$element['captionFrom'].' '.$element['captionLength'],KL_NOTIFY);
+								#$this->LogMessage(GetValueFormatted($element['caption']),KL_NOTIFY);
+								#$this->LogMessage(substr(GetValueFormatted($element['caption']),$element['captionFrom'],$element['captionLength']),KL_NOTIFY);
+								$weatherOutput[] = substr(GetValueFormatted($element['caption']),$element['captionFrom'],$element['captionLength']);
+							} elseif ($element['captionFrom'] !== '') {
+								#$this->LogMessage("-2- ".$element['captionFrom'].' '.$element['captionLength'],KL_NOTIFY);
+								$weatherOutput[] = substr(GetValueFormatted($element['caption']),$element['captionFrom']);
+							} elseif ($element['captionLength'] !== '') {
+								#$this->LogMessage("-3- ".$element['captionFrom'].' '.$element['captionLength'],KL_NOTIFY);
+								$weatherOutput[] = substr(GetValueFormatted($element['caption']),$element['captionLength']);								
+							}
+						} else {
+							$weatherOutput[] = '';
+						}
+						$weatherOutput[] = GetValueFormatted($element['objectIdValue']);
+
+						#$this->LogMessage('##'.implode('~',$weatherOutput),KL_NOTIFY);
+
+
+					}
+					$this->sendMqtt_CustomSend(array(implode('~',$weatherOutput)));
+
+				}
+
+
 			} else { # Refresh abschalten
 				$this->SetTimerInterval("Refresh",0);
 			}
@@ -434,7 +555,7 @@ declare(strict_types=1);
 
 		private function ScrSaverDoubleClickTimer() {
 			$this->WriteAttributeBoolean('ScrSaverDoubleClickActive',0);
-			$this->LogMessage('ScrSaverDoubleClick time stopped',KL_NOTIFY);
+			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('ScrSaverDoubleClick time stopped',KL_NOTIFY);
 			$this->SetTimerInterval('ScrSaverDoubleClick',0);
 			$this->doPanelAction(array('','screensaver','bExit',$this->ReadAttributeString('ScrSaverResult')));
 		}
@@ -489,9 +610,9 @@ declare(strict_types=1);
 			$this->SendDataToParent(json_encode($data, JSON_UNESCAPED_SLASHES));
 			$text2 = utf8_encode($Text);
 			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text,KL_NOTIFY);
-			#if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.$Text[0].'-'.$Text[1].'-'.$Text[2].'-'.$Text[3].'-'.$Text[4].'-'.$Text[5].'-'.$Text[6].'-'.$Text[7].'-'.$Text[8],KL_NOTIFY);
-			#if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.ord($Text[0]).'-'.ord($Text[1]).'-'.ord($Text[2]).'-'.ord($Text[3]).'-'.ord($Text[4]).'-'.ord($Text[5]).'-'.ord($Text[6]).'-'.ord($Text[7]).'-'.ord($Text[8]),KL_NOTIFY);
-			#if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$text2.'|'.ord($text2[0]).'-'.ord($text2[1]).'-'.ord($text2[2]).'-'.ord($text2[3]).'-'.ord($text2[4]).'-'.ord($text2[5]).'-'.ord($text2[6]).'-'.ord($text2[7]).'-'.ord($text2[8]),KL_NOTIFY);
+#			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.$Text[0].'-'.$Text[1].'-'.$Text[2].'-'.$Text[3].'-'.$Text[4].'-'.$Text[5].'-'.$Text[6].'-'.$Text[7].'-'.$Text[8],KL_NOTIFY);
+#			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$Text.'|'.ord($Text[0]).'-'.ord($Text[1]).'-'.ord($Text[2]).'-'.ord($Text[3]).'-'.ord($Text[4]).'-'.ord($Text[5]).'-'.ord($Text[6]).'-'.ord($Text[7]).'-'.ord($Text[8]).'-'.ord($Text[9]).'-'.ord($Text[10]).'-'.ord($Text[11]).'-'.ord($Text[12]).'-'.ord($Text[13]).'-'.ord($Text[14]).'-'.ord($Text[15]).'-'.ord($Text[16]).'-'.ord($Text[17]).'-'.ord($Text[18]).'-'.ord($Text[19]),KL_NOTIFY);
+#			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('Send: '.$text2.'|'.ord($text2[0]).'-'.ord($text2[1]).'-'.ord($text2[2]).'-'.ord($text2[3]).'-'.ord($text2[4]).'-'.ord($text2[5]).'-'.ord($text2[6]).'-'.ord($text2[7]).'-'.ord($text2[8]),KL_NOTIFY);
 
 		}
 
@@ -537,7 +658,7 @@ declare(strict_types=1);
 			$cnt=0;
 
 			while (array_key_exists($save_name."pages$cnt",$name) || array_key_exists($save_name."assignment$cnt",$name)) {
-				$this->LogMessage("Loop $cnt",KL_NOTIFY);
+				#$this->LogMessage("Loop $cnt",KL_NOTIFY);
 				$cnt++;
 			}
 			$this->LogMessage("Save configuration to $save_name $cnt",KL_NOTIFY);
@@ -633,7 +754,7 @@ declare(strict_types=1);
 					$currentPage = $showPage;
 				} else {
 					$currentPage = key($panelPage);
-					if ($debug) $this->LogMessage("Page $showPage dosen't exist",KL_NOTIFY);
+					$this->LogMessage("Page $showPage dosen't exist",KL_ERROR);
 				}
 			} elseif ($changePage == self::UP) { 
 				# Wenn key return existiert, dann dort hin springen, wenn nicht zu main springen, wenn main nicht exisitiert auf die erste Seite springen
@@ -782,7 +903,7 @@ declare(strict_types=1);
 
 				}
 			} else {
-				$this->LogMessage("nothing defined for page $currentPage in readData",KL_NOTIFY);
+				$this->LogMessage("nothing defined for page $currentPage in readData",KL_ERROR);
 			}	
 			$this->WriteAttributeString('registerVariable',json_encode($registerVariable));
 			# call default-page deaktivieren, wenn popupNotify aufgerufen wird
@@ -900,7 +1021,7 @@ declare(strict_types=1);
 					$restoreScreensaver=false;
 				} elseif (is_int($result[1]) && $result[1]< 60001 && IPS_VariableExists($result[1]) ) {
 					if (array_key_exists(3,$result) && $result[3] != '') {
-						if ($debug) $this->LogMessage('default: requestAction for $result[1] with value $result[2]',KL_NOTIFY);
+						if ($debug) $this->LogMessage("default: requestAction for $result[1] with value $result[3]",KL_NOTIFY);
 						# durch requestAction wird message-sink ausgelöst, führt zum flackern des Display, Attribut skipMessageSinkforObject wird in MessageSink wiedezurückgesetzt
 						$this->WriteAttributeInteger('skipMessageSinkforObject',$result[1]);
 						RequestAction($result[1],$result[3]);
@@ -935,7 +1056,7 @@ declare(strict_types=1);
 						if (array_key_exists('CustomRecv',$payload)) {
 							if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('receive: -'.$payload['CustomRecv'].'-',KL_NOTIFY);
 						} else {
-							$this->LogMessage('got strange result: -'.$data['Payload'].'-',KL_NOTIFY);
+							$this->LogMessage('got strange result: -'.$data['Payload'].'-',KL_ERROR);
 							return;
 						}
 						# event ?
@@ -953,9 +1074,36 @@ declare(strict_types=1);
 							# set options
 							$this->SendBacklog();
 							# config screensaver
-							if (!empty($this->ReadPropertyString('sc_dimMode'))) {
-								$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode')));
-							}
+
+							$this->ActivateDimModeTimer(); # Timer für Display gesetzt? Starte im PowerSafe Mode
+
+							# DimMode setzen
+							switch ($this->ReadAttributeInteger('sc_dimModeState')) {
+								case 0:
+									if (!empty($this->ReadPropertyString('sc_dimMode'))) {
+										$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode')));
+									}
+									break;
+								case 1:
+									if (!empty($this->ReadPropertyString('sc_dimMode'))) {
+										$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode_cmd1')));
+									}
+									break;
+								case 2:
+									if (!empty($this->ReadPropertyString('sc_dimMode'))) {
+										$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode_cmd2')));
+									}
+									break;
+								case 3:
+									if (!empty($this->ReadPropertyString('sc_dimMode'))) {
+										$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode_cmd2F')));
+									}
+									break;
+								default :
+									$this->LogMessage("only DimMode 0-3 available",KL_ERROR);
+								}
+
+
 							if (!empty($this->ReadPropertyString('sc_timeout'))) {
 								$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_timeout')));
 							}
@@ -966,7 +1114,7 @@ declare(strict_types=1);
 							if ($this->ReadPropertyBoolean('sc_active') && strlen(trim($this->ReadPropertyString('sc'))) > 0 ) {   
 								$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc')));
 								$this->WriteAttributeBoolean('sc_state_active',1);
-								$this->LogMessage('state sc: active',KL_NOTIFY);
+								if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('state sc: active',KL_NOTIFY);
 								$this->RefreshDate(true);
 								if ($this->ReadPropertyBoolean('sc_notifyActive') && ($this->ReadPropertyInteger('sc_notifyHeading')>1 || $this->ReadPropertyInteger('sc_notifyText')>1)) {
 									$this->sendMqtt_CustomSend(array($this->generateNotifyString()));
@@ -993,6 +1141,9 @@ declare(strict_types=1);
 									return;
 								}
 								$this->RefreshDate(false);
+
+								$this->ActivateDimModeTimer(); # Timer für Display gesetzt? Starte im PowerSafe Mode
+
 								$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadAttributeInteger('currentPage')));
 								$this->registerVariableToMessageSink(true); # RegisterMessage für Var der aktuellen Seite durchführen   
 								$this->WriteAttributeBoolean('sc_state_active',0);
@@ -1035,8 +1186,7 @@ declare(strict_types=1);
 								# Fibaro up 4, close 0, stop 2
 							
 								if (preg_match('/event,buttonPress2,(\d*),([^,]*),*([(yes|no)\d]*)/', $payload['CustomRecv'],$result) ) {
-									$this->LogMessage('R:'.implode('--',$result),KL_NOTIFY);
-#									$this->doPanelAction($result);
+									#$this->LogMessage('R:'.implode('--',$result),KL_NOTIFY);
 									$this->doPanelAction(array('',intval($result[1]),$result[2],$result[3]));
 								}
 							}
@@ -1090,6 +1240,7 @@ declare(strict_types=1);
 					if ($elementLayer1 === 'ExpansionPanel') {
 						foreach ($Form['elements'][$keyLayer0]['items'] as $keyLayer2 => $elementLayer2) {
 							foreach ($Form['elements'][$keyLayer0]['items'][$keyLayer2] as $keyLayer3 => $elementLayer3) {
+								#$this->LogMessage('#####'.$keyLayer2.'--'.$elementLayer3,KL_NOTIFY);
 								if ($elementLayer3 === 'RowLayout') {
 									foreach($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'] as $keyLayer4 => $elementLayer4) {
 										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc') {
@@ -1107,6 +1258,12 @@ declare(strict_types=1);
 										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'defaultPageTime') {
 											if (!$this->ReadPropertyBoolean('defaultPageActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
 										}
+										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_powersafeTime') {
+											if (!$this->ReadPropertyBoolean('sc_powersafeTime_active'))	$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
+										}
+										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_powersafeCmd') {
+											if (!$this->ReadPropertyBoolean('sc_powersafeTime_active'))	$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
+										}
 										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'defaultPage') {
 											if (!$this->ReadPropertyBoolean('defaultPageActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
 											$cnt=0;
@@ -1120,6 +1277,20 @@ declare(strict_types=1);
 											}
 										}
 									}
+								}
+								if ($elementLayer3 === 'sc_wc_assignIcons' ) {
+									#$this->LogMessage("sc_wc_assignIcons",KL_NOTIFY);
+#									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][1]['edit']['options'][0]['caption'] = "Wert";#
+#									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][1]['edit']['options'][0]['value'] = 2;
+
+									$iconOptions = [];
+
+									foreach ($this->icons as $key => $value) {
+										array_push($iconOptions, ['caption' => $key, 'value' => $key]);
+									}
+									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][2]['edit']['options']=$iconOptions;
+									
+									
 								}
 							}
 						}
@@ -1137,6 +1308,11 @@ declare(strict_types=1);
 								if ($elementLayer3 === 'PanelVersion') {
 									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['value'] = $this->ReadAttributeString('PanelVersion');
 								}
+								if ($elementLayer3 === 'sc_dimModeState') {
+									#$this->LogMessage("lllllllll",KL_NOTIFY);
+									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['value'] = $this->ReadAttributeInteger('sc_dimModeState');
+								}
+
 								if ($elementLayer3 === 'panelPageValuesArray') {
 									foreach($elementLayer2['columns'] as $keyColumn => $columnsElement) {
 										if ($columnsElement['name'] == 'panelPage') { # Suche nach panelPage

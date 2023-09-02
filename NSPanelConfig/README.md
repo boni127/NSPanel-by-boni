@@ -18,8 +18,11 @@ Dieses Modul bindet das Sonoff NSP-Panel (EU / US) mit der lovelace UI in Symcon
 * Bildschirmschoner mit Uhrzeit / Datumsanzeige
 * frei konfigurierbare Variableneinbindung aus Symcon, um Inhalte von Variablen auf dem Display darzustellen
 * anlegen von Aktionen, um RequestActions / Scripte / Scripte mit Parametern aufzurufen
+* Ansteueren der Relais
+* Entkoppeln der Tasten von den Relais
+* Abfragen der Tasten
 
-Aktuell werden der Temp. Sensor, die Tasten sowie die Relais weder abgefragt noch angesteuert.
+Aktuell wird der Temp. Sensor nicht abgefragt .
 
 ### 2. Voraussetzungen
 
@@ -64,35 +67,98 @@ Ein Beispiel:
 
 ID   | Ebene  | zurück | Typ | Eintrag
 ---- | ------ | -------| --- | -----
-1    |        |        |pageType~cardEntities|entityUpd~Leuchten\~1\|1\~light\~30691\~\~17299\~Hue Lampe\~0\~...
-2    |        |        |pageType~cardMedia   |entityUpd~Bad\~2\|\~41321\~\~17690\~Title-line\~17690\~author-line...
-10   |        |        |pageType~cardGrid    |entityUpd~Radio\~1\|1\~light\~1101\~\~17299\~Fav1\~1\~....
-1104 | 1      |        |pageType~cardGrid    |entityUpd~Szenen\~2\|1\~light\~1102\~\~17299\~Szene 1\~1\~...
-1105 | 1      |        |pageType~cardGrid    |entityUpd~Szenen\~1\|0\~light\~1108\~\~17299\~Szene 6\~1\~light\~1109\~\~17299\~Szene 7\~1
+1    |        |        |pageType\~cardEntities  |entityUpd\~Licht\~btn\~bPrev\~\~65535\~\~\~btn\~bNext\~\~65535\~\~\~switch\~30691\~\~17299\~Schreibtisch\~0\~light\~50151\~\~17299\~Wandlampe\~0
+2    |        |        |pageType\~cardGrid      |entityUpd\~Büro\~btn\~bPrev\~\~65535\~\~\~btn\~bNext\~\~65535\~\~\~light\~1001\~\~17299\~Licht\~0\~button\~1002\~\~17299\~Rollo
+1001 | 1      |        |pageType\~cardEntities  |entityUpd\~Licht\~\~\~\~\~\~\~btn\~bUp\~\~65535\~\~\~switch\~30691\~\~17299\~Schreibtischlampe\~0
+1002 | 1      | 2      |pageType\~cardEntities  |entityUpd\~Rolladen\~\~\~\~\~\~\~btn\~bUp\~\~65535\~\~\~shutter\~3002\~\~17299\~Fenster Garten
 
-Die erste dargestellte Seite hat die ID **1**, von hier ausgehend wechseln die Navigationselemente am oberen Rand des Displays zu den Seiten **2**, **10**, und wieder auf die **1**.
-Seite **1** enthält einen Sprung auf die  Seite **1104**. Gekennzeichnet durch den Eintrag in der Spalte *Ebene* wird hier zwischen den Seite **1104** und **1105** gewechselt. Der
-Rücksprung in die übergeordnete Ebene erfolgt ebenfalls über den Eintrag *Ebene* zur Seite **1**
+Die erste dargestellte Seite hat die ID **1**, von hier ausgehend wechseln die Navigationselemente am oberen Rand des Displays zu den Seiten **2**  und wieder auf die **1**.
+Seite **2** enthält einen Sprung auf die  Seite **1001** und **1002**. Gekennzeichnet durch den Eintrag in der Spalte *Ebene* wird hier zwischen den Seite **1001** und **1002** gewechselt. Der
+Rücksprung in die übergeordnete Ebene erfolgt bei Seite **1001** über den Eintrag *Ebene* zur Seite **1**, abweichend davon springt Seite **1002** auf die Seite **2** zurück. Somit weist *Ebene* nicht nur die 
+Zusammengehörigkeit der Menüeinträge aus, sondern auch die Rücksprungseite.   
 
 
 Hier beispielhaft der Eintrag für die erste Seite. 
 
-`entityUpd~Leuchten~1|1~light~30691~~17299~Hue Lampe~0~number~10007~~17299~Dimmer~0|0|255~light~50151~~17200~Wandlampe~1~input_sel~1104~~17299~Szenensteuerung~aufrufen`
+`entityUpd~Licht~btn~bPrev~~65535~~~btn~bNext~~65535~~~switch~30691~~17299~Schreibtisch~0~light~50151~~17299~Wandlampe~0`
 
-`entityUpd~Leuchten~1|1` erzeugt die Überschrift *Leuchten* und die Navigationspfeile links / rechts
-`light~30691~~17299~Hue Lampe~0` ist das erste Element auf der Seite, eine Checkbox mit der Beschriftung *Hue Lampe*.
+`entityUpd~Licht~` erzeugt die Überschrift *Licht*
+`btn~bPrev~~65535~~~` Navigationspfeil links oben im Display
+`btn~bNext~~65535~~~`  Navigationspfeil rechts oben im Display
 
-Wichtig ist hier der zweite Eintrag in der durch \~ Zeichen getrennten Liste. Hier steht der interne Name des Elements auf der Seite: 30691.
+Wichtig sind hier die Schlüsselworte 
+
+* `bPrev` vorherige Seite aufrufen
+* `bNext` nächste Seite aufrufen
+* `bUp` übergeordnete Menustruktur aufrufen
+
+Anhand dieser Schlüsselworte erkennt das NSPanel-Modul die Navigation in der Menüstruktur
+
+`switch~30691~~17299~Schreibtisch~0` ist das erste Element auf der Seite, ein Element vom Type Switch in der Farbe 17299 mit der Beschriftung *Schreibtisch*.
+
+Wichtig ist hier der zweite Eintrag in der durch ~ Zeichen getrennten Liste. Hier steht der interne Name des Elements auf der Seite: 30691.
 An dieser Stelle erwartet das Module entweder eine Objekt-ID eines Symcom Objektes ( 10000-60000 ) oder die ID einer Seiten, die aufgerufen werden soll.
 
-Hier dazu das zweite Beispiel:
+Analog dazu das zweite Element auf dieser Seite:
 
-`input_sel~1104~~17299~Szenensteuerung~aufrufen` Dies erzeugt das Element *Szenensteuerung* mit einem Button *aufrufen* auf dem Panel. Über den Button erfolgt der Aufruf der ID 1104.
+`light~50151~~17299~Wandlampe~0` Dies erzeugt das Element *Wandlampe* vom Typ light. Das Symcon Object dazu ist die ID 50151.
 
-Das war es auch schon, nun kann in der Seite navigiert werden und über die Checkbox *Hue Lampe* via RequestAction(30691,\<Value\>) . ( \<Value\> ist beim Element *light* 0 oder 1) das erste Object geschaltet werden.
-Infos zur Syntax des lovelace ui ist hier https://docs.nspanel.pky.eu und https://github.com/jobr99/nspanel-lovelace-ui zu finden.
+Das war es auch schon, nun kann in den Seiten navigiert werden und über die Schalter  *Wandlampe* und Schreibtisch die ersten Objekte geschaltet werden.
 
-##### popupNotify
+Der Menüeintrag mit der ID *2* ist vom Typ cardGrid und stellt bis zu 6 Elemente auf der Seite dar.
+Der Anfang `entityUpd~Büro~btn~bPrev~~65535~~~btn~bNext~~65535~~~` definiert wieder Überschrift und Navigationsbuttons,
+`light~1001~~17299~Licht~0~` das erste Element welches das Untermenü *1001* aufruft. `button~1002~~17299~Rollo` ist das zweite Element auf dieser Seite, welches Untermenü *1002* aufruft.
+
+Menü *1001* ist wieder vom Typ cardEntities und stellt einen Switch dar, hier wieder das Symcon Objekt 30691.  Abweichend von den Menüs *1* und *2* gibt es hier nur auf der rechten Seite einen Navigationsbutten um
+wieder in die übergerodnete Menüebene zurückzukehren. Dies wird durch einen leeren Eintrag für den linken Navigationsbutton erreicht:
+
+`entityUpd~Licht~`  erzeugt die Überschrift Licht
+`~~~~~~` Navigationspfeil links, und somit leer
+`btn~bUp~~65535~~~` Navigationspfeil rechts
+`switch~30691~~17299~Schreibtischlampe~0` Element vom Typ Switch für Symcon Objekt 30691
+
+Menü *1002* ist ebenfalls vom Typ cardEntities, hier wird abweichend von Menü *1001* ein Rollo bedient
+
+`entityUpd~Rolladen~` erzeugt die Überschrift Licht
+`~~~~~~` Navigationspfeil links, und somit leer
+`btn~bUp~~65535~~~` Navigationspfeil rechts
+`shutter~3002~~17299~Fenster Garten` Element vom Typ shutter. Da das Shutter Element nicht über on/off sondern über up/stop/down gesteuert wird, müssen wir etwas mehr zaubern. Dazu wird eine Aktionszuweisung *3002* definiert. Die ID der Aktion ist frei wählbar, es kann auch die Symcon Objekt der Rollo-Instanz genommen werden. Die Aktionszuweisung erfolgt somit für
+
+Objekt/Seite *3002* mit den Werten:
+
+result | filter | Aktion        | Objekt | toggle | maxstep | value
+------ | ------ | ------------- | ------ | ------ | ------- | -----
+stop   |        | RequestAction | 18163  |  off   | 0       | 2
+up     |        | RequestAction | 18163  |  off   | 0       | 0
+down   |        | RequestAction | 18163  |  off   | 0       | 4
+
+18163 ist die Objekt-ID des Shelly_Roller, Der Shelly erwartet die Kommandos für die Rollfahrt als nummerische Werte: 0 - up, 2 - stop, 4 - down 
+
+Weitere Details zur Aktionszuweisung weiter unten.
+
+Damit sind wir fast fertig, im NSPanel werden bis jetzt aber noch keine Status-Änderungen aktualisiert. Das geschieht über Wertzuweiung. Somit legen wir hier zwei Wertzuweiungen an, für Menü *1* und *1001*
+
+Für Menü *1*
+
+Variable                          | Wert            | Trenner | formatiert | Länge | Ergebnisspalte
+--------------------------------- | --------------- | ------- | ---------- | ----- | --------------
+Status-Variable von Symcon-Objekt | Variableninhalt |         | off        |       | 19
+
+und ebenfalls für Menü *1001*
+
+Variable                          | Wert            | Trenner | formatiert | Länge | Ergebnisspalte
+--------------------------------- | --------------- | ------- | ---------- | ----- | --------------
+Status-Variable von Symcon-Objekt | Variableninhalt |         | off        |       | 19
+
+Die Ergebnisspalte ist die Stelle im NSPanel-Konfig-String mit der Wertangabe zum jeweiligen Element
+`entityUpd~Licht~btn~bPrev~~65535~~~btn~bNext~~65535~~~switch~30691~~17299~Schreibtisch~`SPALTE19`~light~50151~~17299~Wandlampe~0`
+Zur einfacheren Orientierung gibt es in der Aktionssektion der Konfigurationsseite einen List-Helper.
+
+
+
+Infos zur Syntax des lovelace ui sind hier https://docs.nspanel.pky.eu und https://github.com/jobr99/nspanel-lovelace-ui zu finden.
+
+##### popupNotify (veralet, wird noch überarbeitet)
 
 Beim direkten Aufruf der Infoseite pageType~popupNotify aus dem Menü ergibt sich folgende Besonderheit: Die Seite popupNotofy hat am oberen Bildschirmrand keine Navigationstasten, sondern nur ein Exit. Somit muß in der Seitendefinition eine Rücksprungadresse entweder über *Ebene* oder *zurück* angegeben werden. Fehlen diese Angeben erfolgt der Rücksprung zur ersten Menuseite.
 
@@ -110,10 +176,11 @@ ID   | Ebene  | zurück | Typ | Eintrag
 Wird hier nun Seite **3** aufgerufen, führt das Verlassen von Seite **3** direkt zu Seite **2**.
 
 
-#### Wertzuweisung
+### Wertzuweisung
 
 Über die Tabelle Wertzuweisung werden die Verknüpfungen der Symcon Objekte mit den einzelnen Seiten auf den Panel definiert.
 
+* **Seite** : legt fest für welche Seite die Wertzuweisung gültig ist
 * **Variable** : Objekt-ID der IPS Variable, die auf dem Display dargestellt werden soll
 * **Wert** : der Variableninhalt (default) oder der Variablenwert wird ausgelesen ( hilfreich, wenn bspw. Variablen mit dem Namen einer Stationstaste beim Radio ausgelesen werden sollen) 
 * **Trenner** : das Lovelace UI Element numbers erwartet einen Wertebereich (akt. Wert\|Min\|Max) durch \| getrennt. Hier kann der Trenner festgelegt werden. Bislang habe ich aber nur das Pipe-Symbol als Trenner gefunden
@@ -210,9 +277,24 @@ Im Aktion-Bereich gibt es einen Listhelper. Hier können die Spalten der einzeln
 
 #### alternative DimMode's
 
-Über den Punkt alternative DimMode lassen sich 3 weitere dimModes definieren, die über das Kommando DBNSP_SetDimMode(<0\|1\|2\|3>) von extern aufgerufen werden können. Beispielsweise über einen  Wochenplan oder per Event bei Sonneauf- oder untergang.
-Der Parameter 0 ruft den unter dem Screensaver definierten DimMode auf; 1,2,3 die entsprechenden DimModes. Beim Start des Moduls wird immer der unter dem Screensaver definierte DimMode gesetzt.
+Über den Punkt `alternative DimMode` lassen sich 3 weitere dimModes definieren, die über das Kommando `DBNSP_SetDimMode(<0\|1\|2\|3>)` von extern aufgerufen werden können. Beispielsweise über einen Wochenplan oder per Event bei Sonneauf- oder untergang.
+Der Parameter 0 ruft den unter dem Screensaver definierten DimMode `Screensaver DimMode 0` auf; 1,2,3 die entsprechenden DimModes. Beim Start des Moduls wird immer der zuletzt gesetzte DimMode aktiviert.
+DimMode 1-3 übersteueren den `DimMode after Screensaver Timeout`
 
+Mit `DimMode after Screensaver Timeout` kann eine weitere Stufe des DimModes definiert werden. Wenn aktiviert, startet nach Aktivierung des Screensavers im NSPanel eine Zeitspanne `time until Dimmode starts` nach der sich der DimMode `Screensaver DimMode T` aktiviert.
+
+Bespiel:  
+
+Screensaver DimMode 0 | Screensaver Timeout | DimMode after Screensaver Timeout | time until DimMode starts | Screensaver DimMode T 
+--------------------- | ------------------- | --------------------------------- | ------------------------- | ---------------------
+dimmode~20~100        | timeout~15          | aktiv                             | 1200                      | dimmode~0~50
+
+Der Screensaver wird nach 15 Sekunden aktiv, nach weiteren 20 Min (1200 s), startet der DimMode `Screensaver DimMode T` und die Anzeige des NSPanel wird in diesem Fall (dimmode~0~x) abgeschaltet.
+Der `DimMode after Screensaver Timeout` ist nur aktiv, wenn der DimMode via `DBNSP_SetDimMode` auf 0 (default) gesetzt ist.
+
+Über das Kommando `ActiveDimModeTimer` kann der Timer neu gestartet werden, beispielsweise um mittels Bewegungsmelder das NSPanel wieder zu aktivieren
+
+ 
 ### 5. Statusvariablen und Profile
 
 

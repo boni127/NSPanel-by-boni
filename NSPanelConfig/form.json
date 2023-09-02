@@ -21,6 +21,13 @@
                     "caption" : "Panel Version",
                     "enabled" : false,
                     "width" : "150px"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name":"sc_dimModeState",
+                    "caption": "current DimMode",
+                    "width" : "150px",
+                    "enabled": false
                 }
             ]
         },
@@ -28,6 +35,24 @@
             "type": "ExpansionPanel",
             "caption": "Screensaver",
             "items" : [
+                {
+                    "type" : "RowLayout",
+                    "items" : [
+                    {
+                        "type" :"CheckBox", 
+                        "name": "sc_active", 
+                        "caption": "activate screensaver",
+                        "width": "200px",
+                        "onChange" : "IPS_RequestAction($id,'toggleSc_active',$sc_active);"
+
+                    },
+                    {
+                        "type": "ValidationTextBox",
+                        "name": "sc",
+                        "caption": "Screensaver"
+                    }
+                    ]
+                },
                 {
                 "type" : "RowLayout",
                 "items": [  
@@ -58,20 +83,45 @@
                 {
                     "type": "ValidationTextBox",
                     "name": "sc_dimMode",
-                    "caption": "Screensaver DimMode"
+                    "caption": "Screensaver DimMode 0"
                 },
                 {
                     "type": "ValidationTextBox",
                     "name": "sc_timeout",
                     "caption": "Screensaver Timeout"
                 },
+                {
+                    "type" : "RowLayout",
+                    "items" : [
+                        {
+                            "type" : "CheckBox",
+                            "name" : "sc_powersafeTime_active",
+                            "caption" : "DimMode after Screensaver Timeout",
+                            "width" : "250px",
+                            "onChange" : "IPS_RequestAction($id,'toggleSc_powersafeTime',$sc_powersafeTime_active);"
 
+                        },
+                        {
+                            "type" : "NumberSpinner",
+                            "name" : "sc_powersafeTime",
+                            "caption" : "time until DimMode starts, in sec.",
+                            "minimum" : 0,
+                            "width" : "200px"
+                        },
+                        {
+                            "type" : "ValidationTextBox",
+                            "name" : "sc_powersafeCmd",
+                            "caption" : "Screensaver DimMode T",
+                            "width" : "300px"
+                        }
+                    ]
+                },
                 {
                     "type": "ExpansionPanel",
                     "caption": "alternative DimMode",
                     "items" : [
                         {   "type": "Label", 
-                            "caption": "this dimMode's can be called via the command DBNSP_SetDimMode <0|1|2|3>. Option 0 is the default dimMode defined above. Option 1 dimMode 1 and so on" 
+                            "caption": "this dimMode's could be called via the command DBNSP_SetDimMode <0|1|2|3>. Option 0 is the default dimMode defined above in Screensaver DimOde 0. Option 1 dimMode 1 and so on." 
                         },
                         {
                             "type" : "ValidationTextBox",
@@ -91,25 +141,6 @@
                     ]
                 },
 
-                
-                {
-                    "type" : "RowLayout",
-                    "items" : [
-                    {
-                        "type" :"CheckBox", 
-                        "name": "sc_active", 
-                        "caption": "activate screensaver",
-                        "width": "200px",
-                        "onChange" : "IPS_RequestAction($id,'toggleSc_active',$sc_active);"
-
-                    },
-                    {
-                        "type": "ValidationTextBox",
-                        "name": "sc",
-                        "caption": "Screensaver"
-                    }
-                    ]
-                },
                 {
                     "type" : "RowLayout",
                     "items" : [
@@ -153,6 +184,106 @@
                             "type" : "SelectObject",
                             "name" : "sc_notifyText",
                             "caption" : "text"
+                        }
+                    ]
+                },
+                {
+                    "type"  :"CheckBox",
+                    "name" : "sc_weatherActive",
+                    "caption" : "Weatherforecast"              
+                },
+                {
+                    "type": "List",
+                    "name": "sc_wc_assignIcons",
+                    "caption": "Symbolzuordnung",
+                    "add": true,
+                    "changeOrder": true,
+                    "delete": true,
+                    "columns": [
+                        {
+                        "caption": "WeatherApi-Code",
+                            "name": "assignment",
+                            "width": "14%",
+                            "add" : "",
+                            "edit": {
+                                "type": "ValidationTextBox"
+                            }
+                        },
+                        {
+                            "caption": "Icon-Farbe",
+                                "name": "iconColor",
+                                "width": "10%",
+                                "add" : 17560,
+                                "edit": {
+                                    "type": "NumberSpinner"
+                                }
+                        },
+                        {
+                            "caption": "Lovelace Icon",
+                                "name": "icon",
+                                "width": "24%",
+                                "add" : "",
+                                "edit": {
+                                    "type": "Select",
+                                    "options": [ ]
+                                }
+                        }
+                    ]
+                },
+                {
+                    "type": "List",
+                    "name": "sc_weatherforecast",
+                    "caption": "Anzeige",
+                    "changeOrder": true,
+                    "add": true,
+                    "delete": true,
+                    "columns": [
+                        {
+                            "caption": "Variable",
+                            "name": "objectIdValueSymbol",
+                            "width": "20%",
+                            "add": 0,
+                            "edit": {
+                                "type": "SelectObject" 
+                            }
+                        },
+                        {
+                        "caption": "caption",
+                            "name": "caption",
+                            "width": "20%",
+                            "add" : "",
+                            "edit": {
+                                "type": "SelectObject"
+                            }
+                        },
+                        {
+                            "caption": "from",
+                                "name": "captionFrom",
+                                "width": "20%",
+                                "add" : 0,
+                                "edit": {
+                                    "type": "NumberSpinner"
+                                }
+                            },
+                            {
+                                "caption": "length",
+                                    "name": "captionLength",
+                                    "width": "20%",
+                                    "add" : 99,
+                                    "edit": {
+                                        "type": "NumberSpinner"
+                                    }
+                                },
+                                    {
+                            "caption": "Variable",
+                            "name": "objectIdValue",
+                            "width": "20%",
+                            "add": 0,
+                            "edit": {
+                                "type": "SelectObject", 
+                                "options" : [
+                                ]
+                            }
                         }
                     ]
                 }
