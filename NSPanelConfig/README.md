@@ -196,18 +196,18 @@ Mit dieser Seiten Definition wird ein Switch und ein Slider auf dem NSPanel ange
 
 ID   | Ebene  | zurück | Typ | Eintrag
 ---- | ------ | -------| --- | -----
-1    |        |        |pageType~cardEntities|entityUpd~Leuchten\~1\|1\~light\~30691\~\~17299\~Hue Lampe\~0\~number\~10007\~\~17299\~Dimmer\~0\|0\|255
+1    |        |        |pageType\\~cardEntities|entityUpd\~Test\~btn\~bPrev\~\~65535\~\~\~btn\~bNext\~\~65535\~\~\~switch\~50151\~\~17299\~Wandlampe\~0\~number\~10006\~\~17299\~Schreibtisch\~0\|0\|255
 
-Der Eintrag ist durch das \~ Symbol in 15 Spalten getrennt, Spalte 0 - 14
+Der Eintrag ist durch das \~ Symbol in 26 Spalten getrennt, Spalte 0 - 25
 
 In der Tabelle Wertzuweisung werden nun folgende Zuordnungen für die Seite **1** festgelegt
 
 Variable | Trenner | formatiert | Ergebnisspalte
 -------- | ------- | ---------- | --------------
-30691    |         |            | 8
-10007    | \|      |            | 14
+30691    |         |            | 19
+10006    | \|      |            | 25
 
-Damit kann nun vom Display der Switch 30691 und der Dimmer 10007 bedient werden, ändern sich die IPS-Variablne, wird der Displayinhalt aktualisiert. Die Interaktion mit IPS erfolgt über RequestAktion
+Damit kann nun vom Display der Switch 30691 und der Dimmer 10006 bedient werden, ändern sich die IPS-Variablne, wird der Displayinhalt aktualisiert. Die Interaktion mit IPS erfolgt über RequestAktion
 
 ### Aktionszuweisung
 
@@ -277,7 +277,7 @@ Im Aktion-Bereich gibt es einen Listhelper. Hier können die Spalten der einzeln
 
 #### alternative DimMode's
 
-Über den Punkt `alternative DimMode` lassen sich 3 weitere dimModes definieren, die über das Kommando `DBNSP_SetDimMode(<0\|1\|2\|3>)` von extern aufgerufen werden können. Beispielsweise über einen Wochenplan oder per Event bei Sonneauf- oder untergang.
+Über den Punkt `alternative DimMode` lassen sich 3 weitere dimModes definieren, die über das Kommando `DBNSP_SetDimMode(<0|1|2|3>)` von extern aufgerufen werden können. Beispielsweise über einen Wochenplan oder per Event bei Sonneauf- oder untergang.
 Der Parameter 0 ruft den unter dem Screensaver definierten DimMode `Screensaver DimMode 0` auf; 1,2,3 die entsprechenden DimModes. Beim Start des Moduls wird immer der zuletzt gesetzte DimMode aktiviert.
 DimMode 1-3 übersteueren den `DimMode after Screensaver Timeout`
 
@@ -287,7 +287,7 @@ Bespiel:
 
 Screensaver DimMode 0 | Screensaver Timeout | DimMode after Screensaver Timeout | time until DimMode starts | Screensaver DimMode T 
 --------------------- | ------------------- | --------------------------------- | ------------------------- | ---------------------
-dimmode~20~100        | timeout~15          | aktiv                             | 1200                      | dimmode~0~50
+dimmode\~20\~100        | timeout\~15          | aktiv                             | 1200                      | dimmode\~0\~50
 
 Der Screensaver wird nach 15 Sekunden aktiv, nach weiteren 20 Min (1200 s), startet der DimMode `Screensaver DimMode T` und die Anzeige des NSPanel wird in diesem Fall (dimmode~0~x) abgeschaltet.
 Der `DimMode after Screensaver Timeout` ist nur aktiv, wenn der DimMode via `DBNSP_SetDimMode` auf 0 (default) gesetzt ist.

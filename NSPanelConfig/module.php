@@ -232,11 +232,13 @@ require_once __DIR__ . '/icon-mapping.php';
 			# Object-Id's für die Heading und Notify-Zeile des Screensavers
 			# wenn register = false, dann ist der screensaver aktiv.
 			if (!$register) {
-				if ($this->ReadPropertyInteger('sc_notifyHeading') > 1) {
-					$target[$this->ReadPropertyInteger('sc_notifyHeading')]=0;
-				}
-				if ($this->ReadPropertyInteger('sc_notifyText') > 1) {
-					$target[$this->ReadPropertyInteger('sc_notifyText')]=0;
+				if ($this->ReadPropertyBoolean('sc_notifyActive')) { # Wenn der Screensaver  aktiv ist,  Var für notify registrieren
+					if ($this->ReadPropertyInteger('sc_notifyHeading') > 1) {
+						$target[$this->ReadPropertyInteger('sc_notifyHeading')]=0;
+					}
+					if ($this->ReadPropertyInteger('sc_notifyText') > 1) {
+						$target[$this->ReadPropertyInteger('sc_notifyText')]=0;
+					}
 				}
 			}
 			if ($debug) {
@@ -837,7 +839,7 @@ require_once __DIR__ . '/icon-mapping.php';
 			// ),
 			// 	23	=> array (	array ('objectId' => 16, 'resultfield' => 17),
 			// 					array ('objectId' => 18, 'resultfield' => 18),
-			// 			),
+			// 			)
 
 			// );
 
