@@ -553,6 +553,7 @@
                                                 {"caption" : "RequestAction", "value" : 0},
                                                 {"caption" : "start script", "value" : 1},
                                                 {"caption" : "start script with parameter", "value" : 3},
+                                                {"caption" : "SetValue", "value" : 4},
                                                 {"caption" : "call Page", "value" : 2}
                                             ]
                                         }

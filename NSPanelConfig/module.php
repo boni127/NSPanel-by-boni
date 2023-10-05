@@ -948,7 +948,7 @@ require_once __DIR__ . '/icon-mapping.php';
 							$doAction = $result[2];
 						}
 
-						# action abarbeiten: 0: RequestAction, 1: RunScript, 2: Goto Page, 3: RunscriptEx 
+						# action abarbeiten: 0: RequestAction, 1: RunScript, 2: Goto Page, 3: RunscriptEx , 4: SetVariable
 						if ($panelAction[$result[1]][$doAction]['action'] == 0 ) {
 							if (IPS_VariableExists($panelAction[$result[1]][$doAction]['id'])) {
 								if ($debug) $this->LogMessage('RequestAction for object '.$panelAction[$result[1]][$doAction]['id'], KL_NOTIFY);
@@ -1003,6 +1003,40 @@ require_once __DIR__ . '/icon-mapping.php';
 								}
 							} else {
 								$this->LogMessage('script '.$panelAction[$result[1]][$doAction]['id'].'F doesnt exist',KL_ERROR);
+							}
+						} elseif ($panelAction[$result[1]][$doAction]['action'] == 4 ) {  # SetVariable
+							if ($debug) $this->LogMessage('set variable '.$panelAction[$result[1]][$doAction]['id'],KL_NOTIFY);
+							if (IPS_VariableExists($panelAction[$result[1]][$doAction]['id']))  {
+								if (array_key_exists('toggle',$panelAction[$result[1]][$doAction]) && $panelAction[$result[1]][$doAction]['toggle']) { # toggle
+									if ((IPS_GetVariable($panelAction[$result[1]][$doAction]['id']))['VariableType'] == 0) {
+										SetValue($panelAction[$result[1]][$doAction]['id'],!GetValue($panelAction[$result[1]][$doAction]['id']));
+									} else {
+										$this->LogMessage('no boolean variable, toggle not available',KL_ERROR);
+									}
+									$this->LogMessage('debug: toggle',KL_NOTIFY);
+								} else {
+									if (array_key_exists('maxstep',$panelAction[$result[1]][$doAction])) { # maxstep gesetzt
+										$oldValue = GetValue($panelAction[$result[1]][$doAction]['id']);
+										if (($result[3] - $oldValue) > $panelAction[$result[1]][$doAction]['maxstep']) {
+											if ($debug) $this->LogMessage("maxstep defined: old $oldValue, new $result[3] -> ".$oldValue.' + '.$panelAction[$result[1]][$doAction]['maxstep'].' = '.($oldValue+$panelAction[$result[1]][$doAction]['maxstep']),KL_NOTIFY);
+											SetValue($panelAction[$result[1]][$doAction]['id'],$oldValue+$panelAction[$result[1]][$doAction]['maxstep']);
+										} else {
+											if ($debug) $this->LogMessage('maxstep defined: set value to'.$result[3],KL_ERROR);
+											SetValue($panelAction[$result[1]][$doAction]['id'],$result[3]);
+										}
+									} else {
+										if (array_key_exists('value',$panelAction[$result[1]][$doAction])) {
+											if ($debug) $this->LogMessage('value in action assignment is set, set value to '.$panelAction[$result[1]][$doAction]['value'],KL_ERROR);
+											SetValue($panelAction[$result[1]][$doAction]['id'],$panelAction[$result[1]][$doAction]['value']);
+
+										} else {
+											if ($debug) $this->LogMessage('set value to '.$result[3],KL_NOTIFY);
+											SetValue($panelAction[$result[1]][$doAction]['id'],$result[3]);
+										}
+									}
+								}
+							} else {
+								$this->LogMessage('variable '.$panelAction[$result[1]][$doAction]['id'].' doesnt exist',KL_ERROR);
 							}
 						} elseif ($panelAction[$result[1]][$doAction]['action'] == 2 ) {
 							if ($debug) $this->LogMessage('goto page '.$panelAction[$result[1]][$doAction]['id'],KL_NOTIFY);
