@@ -127,6 +127,7 @@ require_once __DIR__ . '/icon-mapping.php';
 					if (array_key_exists('formatted', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['formatted'] = $pageEntry['formatted'];
 					if (array_key_exists('resultField', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['resultField'] = $pageEntry['resultField'];
 					if (array_key_exists('valueLength', $pageEntry) && intval($pageEntry['valueLength']) > 0) $varAssignmentDst[$listEntry['panelPage']][$cnt]['valueLength'] = intval($pageEntry['valueLength']);
+					if (array_key_exists('mpx', $pageEntry)) $varAssignmentDst[$listEntry['panelPage']][$cnt]['mpx'] = $pageEntry['mpx'];
 					if (array_key_exists('valuetype', $pageEntry)) {
 						$varAssignmentDst[$listEntry['panelPage']][$cnt]['valuetype'] = $pageEntry['valuetype'];
 					} else {
@@ -138,7 +139,7 @@ require_once __DIR__ . '/icon-mapping.php';
 
 			// Werte aus der panelActionValuesArray für die interne Nutzung anpassen
 			$varActionAssignmentDst = array();
-			$varActionAssignmentSrc = json_decode($this->ReadPropertyString('panelActionValuesArray'),true);			
+			$varActionAssignmentSrc = json_decode($this->ReadPropertyString('panelActionValuesArray'),true);
 			foreach ($varActionAssignmentSrc as $actionEntry => $actionListEntry) {
 				foreach ($actionListEntry['panelActionValues'] as $actionValueKey => $actionValueEntry ) {
 					$filterDefinition='';
@@ -149,6 +150,9 @@ require_once __DIR__ . '/icon-mapping.php';
 					}
 					$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['action'] = $actionValueEntry['action'];
 					$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['id'] = $actionValueEntry['actionId'];
+					if (array_key_exists('mpx',$actionValueEntry)) {
+						$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['mpx'] = $actionValueEntry['mpx'];
+					}
 					if ($actionValueEntry['toggle']){
 					 	$varActionAssignmentDst[$actionListEntry['panelActionPage']][$actionValueEntry['result'].$filterDefinition]['toggle'] = $actionValueEntry['toggle'];
 					} else {
@@ -858,6 +862,7 @@ require_once __DIR__ . '/icon-mapping.php';
 							if ($objectType == 6) {
 								$objectId = (IPS_GetLink($objectId))['TargetID'];
 							}
+							
 							# valuetype 0: Namen der Variablen auslsesen, 1: Wert der Variablen auslesen (default)
 							if ($element['valuetype'] == 1) {
 								# GetValueFormatted?
@@ -873,6 +878,11 @@ require_once __DIR__ . '/icon-mapping.php';
 								}
 
 								if ($debug) $this->LogMessage("getValue: ".$objectValue,KL_NOTIFY);
+
+								if (array_key_exists('mpx',$element) && $element['mpx'] != 1) {
+									$objectValue *= $element['mpx'];
+									if ($debug) $this->LogMessage("multiplicate value by ".$element['mpx'].": $objectValue",KL_NOTIFY);
+								}
 							} elseif ($element['valuetype'] == 0) {
 								$objectValue= IPS_GetName($objectId);
 								if ($debug) $this->LogMessage("getName: ".$objectValue,KL_NOTIFY);
@@ -922,6 +932,7 @@ require_once __DIR__ . '/icon-mapping.php';
 			$panelAction = json_decode($this->ReadAttributeString('actionAssignment'),true);
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
 			$restoreScreensaver=true;
+			$resultMultiplicator=1;
 			if ($debug) $this->LogMessage('-> page/object: ' . $result[1] . ', result: ' . $result[2] . ', filter:' . $result[3] . '',KL_NOTIFY);
 
 			# $panelPage beinhaltet die darzustellenden Seiten, $panelAction die Aktionen, die über die Seiten gestartet werden
@@ -966,17 +977,22 @@ require_once __DIR__ . '/icon-mapping.php';
 									if ($debug) $this->LogMessage('predefined value',KL_NOTIFY);
 									RequestAction($panelAction[$result[1]][$doAction]['id'],$panelAction[$result[1]][$doAction]['value']);
 								} else {
-									if ($debug) $this->LogMessage('value: '.$result[3], KL_NOTIFY);
+									if (array_key_exists('mpx',$panelAction[$result[1]][$doAction])) {
+										$resultMultiplicator=$panelAction[$result[1]][$doAction]['mpx'];
+										if ($debug) $this->LogMessage('value (multiplicator '.$resultMultiplicator."): ".$result[3]*$resultMultiplicator ,KL_MESSAGE);
+									} else {
+										if ($debug) $this->LogMessage('value: '.$result[3]*$resultMultiplicator, KL_NOTIFY);
+									}
 									if (array_key_exists('maxstep',$panelAction[$result[1]][$doAction])) {
 										$oldValue = GetValue($panelAction[$result[1]][$doAction]['id']);
-										if (($result[3] - $oldValue) > $panelAction[$result[1]][$doAction]['maxstep']) {
-											if ($debug) $this->LogMessage("maxstep defined: old $oldValue, new $result[3]",KL_NOTIFY);
+										if ((($result[3]*$resultMultiplicator) - $oldValue) > $panelAction[$result[1]][$doAction]['maxstep']) {
+											if ($debug) $this->LogMessage("maxstep defined: old $oldValue, new ".$result[3]*$resultMultiplicator,KL_NOTIFY);
 											RequestAction($panelAction[$result[1]][$doAction]['id'],$oldValue+$panelAction[$result[1]][$doAction]['maxstep']);
 										} else {
-											RequestAction($panelAction[$result[1]][$doAction]['id'],$result[3]);
+											RequestAction($panelAction[$result[1]][$doAction]['id'],$result[3]*$resultMultiplicator);
 										}
 									} else {
-										RequestAction($panelAction[$result[1]][$doAction]['id'],$result[3]);
+										RequestAction($panelAction[$result[1]][$doAction]['id'],$result[3]*$resultMultiplicator);
 									}
 								}
 							} else {
@@ -1013,7 +1029,6 @@ require_once __DIR__ . '/icon-mapping.php';
 									} else {
 										$this->LogMessage('no boolean variable, toggle not available',KL_ERROR);
 									}
-									$this->LogMessage('debug: toggle',KL_NOTIFY);
 								} else {
 									if (array_key_exists('maxstep',$panelAction[$result[1]][$doAction])) { # maxstep gesetzt
 										$oldValue = GetValue($panelAction[$result[1]][$doAction]['id']);

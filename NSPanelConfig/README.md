@@ -17,12 +17,12 @@ Dieses Modul bindet das Sonoff NSP-Panel (EU / US) mit der lovelace UI in Symcon
 * flexible Darstellung beliebiger Menüebenen in beliebiger Schachtelung auf dem Display
 * Bildschirmschoner mit Uhrzeit / Datumsanzeige
 * frei konfigurierbare Variableneinbindung aus Symcon, um Inhalte von Variablen auf dem Display darzustellen
-* anlegen von Aktionen, um RequestActions / Scripte / Scripte mit Parametern aufzurufen
+* Anlegen von Aktionen, um RequestActions / Scripte / Scripte mit Parametern aufzurufen
 * Ansteueren der Relais
 * Entkoppeln der Tasten von den Relais
 * Abfragen der Tasten
 
-Aktuell wird der Temp. Sensor nicht abgefragt .
+Aktuell wird der Temp. Sensor nicht abgefragt.
 
 ### 2. Voraussetzungen
 
@@ -75,7 +75,8 @@ ID   | Ebene  | zurück | Typ | Eintrag
 Die erste dargestellte Seite hat die ID **1**, von hier ausgehend wechseln die Navigationselemente am oberen Rand des Displays zu den Seiten **2**  und wieder auf die **1**.
 Seite **2** enthält einen Sprung auf die  Seite **1001** und **1002**. Gekennzeichnet durch den Eintrag in der Spalte *Ebene* wird hier zwischen den Seite **1001** und **1002** gewechselt. Der
 Rücksprung in die übergeordnete Ebene erfolgt bei Seite **1001** über den Eintrag *Ebene* zur Seite **1**, abweichend davon springt Seite **1002** auf die Seite **2** zurück. Somit weist *Ebene* nicht nur die 
-Zusammengehörigkeit der Menüeinträge aus, sondern auch die Rücksprungseite.   
+Zusammengehörigkeit der Menüeinträge aus, sondern auch die Rücksprungseite. 
+Die Symbole  stellen die Icons da, die Nutzung der Icons ist weiter unten erläutert.
 
 
 Hier beispielhaft der Eintrag für die erste Seite. 
@@ -97,7 +98,7 @@ Anhand dieser Schlüsselworte erkennt das NSPanel-Modul die Navigation in der Me
 `switch~30691~~17299~Schreibtisch~0` ist das erste Element auf der Seite, ein Element vom Type Switch in der Farbe 17299 mit der Beschriftung *Schreibtisch*.
 
 Wichtig ist hier der zweite Eintrag in der durch ~ Zeichen getrennten Liste. Hier steht der interne Name des Elements auf der Seite: 30691.
-An dieser Stelle erwartet das Module entweder eine Objekt-ID eines Symcom Objektes ( 10000-60000 ) oder die ID einer Seiten, die aufgerufen werden soll.
+An dieser Stelle erwartet das Module entweder eine Objekt-ID eines Symcom Objektes ( 10000-60000 ) oder die ID einer Seite, die aufgerufen werden soll.
 
 Analog dazu das zweite Element auf dieser Seite:
 
@@ -122,7 +123,7 @@ Menü *1002* ist ebenfalls vom Typ cardEntities, hier wird abweichend von Menü 
 `entityUpd~Rolladen~` erzeugt die Überschrift Licht
 `~~~~~~` Navigationspfeil links, und somit leer
 `btn~bUp~~65535~~~` Navigationspfeil rechts
-`shutter~3002~~17299~Fenster Garten` Element vom Typ shutter. Da das Shutter Element nicht über on/off sondern über up/stop/down gesteuert wird, müssen wir etwas mehr zaubern. Dazu wird eine Aktionszuweisung *3002* definiert. Die ID der Aktion ist frei wählbar, es kann auch die Symcon Objekt der Rollo-Instanz genommen werden. Die Aktionszuweisung erfolgt somit für
+`shutter~3002~~17299~Fenster Garten` Element vom Typ shutter. Da das Shutter Element nicht über on/off sondern über up/stop/down gesteuert wird, müssen wir etwas mehr zaubern. Dazu wird eine Aktionszuweisung *3002* definiert. Die ID der Aktion ist frei wählbar, es kann auch die Symcon Objekt-ID der Rollo-Instanz genommen werden. Die Aktionszuweisung erfolgt somit für
 
 Objekt/Seite *3002* mit den Werten:
 
@@ -158,7 +159,7 @@ Zur einfacheren Orientierung gibt es in der Aktionssektion der Konfigurationssei
 
 Infos zur Syntax des lovelace ui sind hier https://docs.nspanel.pky.eu und https://github.com/jobr99/nspanel-lovelace-ui zu finden.
 
-##### popupNotify (veralet, wird noch überarbeitet)
+##### popupNotify (veraltet, wird noch überarbeitet)
 
 Beim direkten Aufruf der Infoseite pageType~popupNotify aus dem Menü ergibt sich folgende Besonderheit: Die Seite popupNotofy hat am oberen Bildschirmrand keine Navigationstasten, sondern nur ein Exit. Somit muß in der Seitendefinition eine Rücksprungadresse entweder über *Ebene* oder *zurück* angegeben werden. Fehlen diese Angeben erfolgt der Rücksprung zur ersten Menuseite.
 
@@ -182,10 +183,11 @@ Wird hier nun Seite **3** aufgerufen, führt das Verlassen von Seite **3** direk
 
 * **Seite** : legt fest für welche Seite die Wertzuweisung gültig ist
 * **Variable** : Objekt-ID der IPS Variable, die auf dem Display dargestellt werden soll
-* **Wert** : der Variableninhalt (default) oder der Variablenwert wird ausgelesen ( hilfreich, wenn bspw. Variablen mit dem Namen einer Stationstaste beim Radio ausgelesen werden sollen) 
+* **Wert** : der Variableninhalt (default) oder der Variablenname wird ausgelesen ( hilfreich, wenn bspw. Variablen mit dem Namen einer Stationstaste beim Radio ausgelesen werden sollen) 
+* **Multiplikator** : default 1, Multiplikator für die ausgelesene Variable (wird nur angewendet, wenn Variableninhalt bei Wert gewählt wurde)
 * **Trenner** : das Lovelace UI Element numbers erwartet einen Wertebereich (akt. Wert\|Min\|Max) durch \| getrennt. Hier kann der Trenner festgelegt werden. Bislang habe ich aber nur das Pipe-Symbol als Trenner gefunden
 * **formatiert** : fragt die im IPS Variablenprofil hinterlegte Einheit mit ab
-* **Länge** : Anzahl der Zeichen, die aus der Variable oder dem Variablennamen ausgelsen werden. Ist die Länge des Wertes oder des Variablennamen länger als **Länge** wird ab **Länge** abgeschnitten und um '...' ergänzt 
+* **Länge** : Anzahl der Zeichen, die aus der Variable oder dem Variablennamen ausgelesen werden. Ist die Länge des Wertes oder des Variablennamen länger als **Länge** wird ab **Länge** abgeschnitten und um '...' ergänzt 
 * **Ergebnisspalte** : Ziel für den Wert im Konfigurationsstring des Displays
 
 ##### Beispiel:
@@ -202,10 +204,10 @@ Der Eintrag ist durch das \~ Symbol in 26 Spalten getrennt, Spalte 0 - 25
 
 In der Tabelle Wertzuweisung werden nun folgende Zuordnungen für die Seite **1** festgelegt
 
-Variable | Trenner | formatiert | Ergebnisspalte
--------- | ------- | ---------- | --------------
-30691    |         |            | 19
-10006    | \|      |            | 25
+Variable | Wert            | Multiplikator | Trenner | formatiert | Länge | Ergebnisspalte
+-------- | --------------- | ------------- | ------- | ---------- | ----- | --------------
+30691    | Variableninhalt |             1 |         |            |       | 19
+10006    | Variableninhalt |             1 | \|      |            |       | 25
 
 Damit kann nun vom Display der Switch 30691 und der Dimmer 10006 bedient werden, ändern sich die IPS-Variablne, wird der Displayinhalt aktualisiert. Die Interaktion mit IPS erfolgt über RequestAktion
 
@@ -216,11 +218,14 @@ Interaktionen mit dem Display senden einen Antwortstring an IPS. Ist der Switch 
 
 * **Seite/ Objekt** : ID des Objektes oder der aufgerufenen Seite
 * **result** : Antwortstring des Elements
-* **Aktion** : Auswahl der zu startenden Aktion: RequestAktion, RunScript, RunScriptEx, Aufruf einer Displayseite
+* **filter** : optional: filtert auf Rückgabewert vom Display, bspw up oder stop beim Element shutter.
+* **Aktion** : Auswahl der zu startenden Aktion: RequestAction, RunScript, RunScriptEx, Aufruf einer Displayseite.
+RunscriptEx wird der Parameter als Array  mit dem Key 'value' Übergeben. Der zugewiesene Wert ist entweder der vom Display gesendete Wert, oder wenn vorhanden der Wert im Feld "value".
 * **toggle** : Abfrage einer boolschen Variable und Wechsel des Wertes, um beispielsweise über einen Button auf einer cardGrid eine Lampe ein- und auszuschalten.
 Wird **toggle** gesetzt, erfolgt für die nachfolgenden Felder **maxstep** und **value** keine Auswertung mehr
 * **maxstep** : begrenzt den Wert auf eine  mit **maxstep** definierte Schrittweite. Beispiel Lautstärkeregler. Aktuelle Lautstärke 7, **maxstep** ist auf 5 eingestellt,
 der Slider für die Lautstärke auf dem Display wird auf 80 eingestellt, über **maxstep** wird die Lautstärke jedoch auf 12 (7+5) begrenzt. Wird **maxstep** gesetzt, erfolgt für das nachfolgende Feld **value** keine Auswertung mehr
+* **Multiplikator** : default 1, wird nur bei RequestAction genutzt, Rückgabe des Elements wird mit dem Multiplikator multipliziert.
 * **value** : Wert, der an IPS übermittelt werden soll, wenn dieser von dem im Antwortstring empfangenden Wert abweichen soll
 
 
@@ -254,7 +259,6 @@ Bei der Betätigung des elemets *shutter* auf dem NSPanel liefert das Panel folg
 
 `event,buttonPress2,18163,down` 
 
-
 Um das Rollo zu steuern muß diese Definition vorliegen
 
 Seite | 18163
@@ -267,11 +271,53 @@ down   |        | RequestAction | 18163         |        |         | 4
 
 18163 ist die ID der Variable *Rollo* der Instanz *Shelly2*
 
+Beispiel:
+
+Steuerung der Heizung über cardThermo
+
+Mit Veränderung der Temperatur gibt das Display 
+
+`event,buttonPress2,23676,tempUpd,215`
+
+`event,buttonPress2,23676,tempUpd,210`
+
+`event,buttonPress2,23676,tempUpd,205`
+
+zurück:
+
+Um die Heizung zu steuern muß diese Definition vorliegen
+
+Seite | 23676
+
+result  | filter | Aktion        | Seite/ Objekt | toggle | Multiplikator | maxstep | value
+------- | ------ | ------------- | ------------- | ------ | ------------- | ------- | -------
+tempUpd |        | RequestAction | 37286         |        |           0,1 |         |
+
+37286 ist die ID der Variable *Target temperature* der Instanz *HomeMatic Gerät*, 23676 wurde als Elementname gewählt.
+
+
 ### Hilfreiches
 
 Im Aktion-Bereich gibt es einen Listhelper. Hier können die Spalten der einzelnen Seite dargestellt werden, um einfacher die entsprechende Spalte im lovelace ui Konfig-String zu finden
 
 Über die beiden Buttons Send lassen sich zum Testen Konfig-Strings an das Display senden, über Save und Load kann die aktuelle Konfiguration gespeichert und wieder geladen werden.
+
+### Icons
+
+Unter https://materialdesignicons.com gibt eins übersicht der verfügbaren Icons, viele von den Icons sind im NSPanel hinterlegt.
+Hier https://github.com/joBr99/nspanel-lovelace-ui/blob/main/ip-symcon/icon_mapping.php sind die Codes zu den Icons aufgelistet:
+
+    "abjad-arabic" => "",
+    "abjad-hebrew" => "",
+    "abugida-devanagari" => "",
+    "abugida-thai" => "",
+	....
+
+Das Zeichen in den Anführungszeichen "" an der Stelle in der Seitendefinition einsetzen, wo das Icon erwartet wird:
+
+`entityUpd~Büro~btn~bPrev~~65535~~~btn~bNext~~65535~~~`
+
+Bspw. hier an Spalte 5 für den zurück-Button.
 
 ### ScreenSaver
 

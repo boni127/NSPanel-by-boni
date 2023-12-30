@@ -431,6 +431,17 @@
                                         }
                                     },
                                     {
+                                        "caption": "Multiplikator",
+                                        "name": "mpx",
+                                        "width": "120px",
+                                        "add": "1",
+                                        "edit": {
+                                            "type": "NumberSpinner",
+                                            "value" : 1,
+                                            "digits" : 2
+                                        }
+                                    },
+                                    {
                                         "caption": "Trenner",
                                         "name": "split",
                                         "width": "120px",
@@ -484,14 +495,14 @@
                     "delete": true,
                     "columns": [
                         {
-                            "caption": "Seite/ Object",
+                            "caption": "Seite/ Object (die Angabe muß eindeutig sein)",
                             "name": "panelActionPage",
-                            "width": "150px",
+                            "width": "250px",
                             "visible": true,
                             "add" : "0",
                             "edit" : {
                                 "type": "ValidationTextBox",
-                                "width" : "200px",
+                                "width" : "250px",
                                 "minimum": 0,
                                 "maximum": 60000
                             }
@@ -504,7 +515,7 @@
                             "add" : "",
                             "edit" : {
                                 "type": "ValidationTextBox",
-                                "width" : "200px"
+                                "width" : "250px"
                             }
                         },
                         {
@@ -524,12 +535,13 @@
                                 "onAdd" :  "IPS_RequestAction($id,'PanelActionReset','add');",
                                 "columns": [
                                     {
-                                        "caption": "result",
+                                        "caption": "result (Angabe aus filter und result muß eindeutig sein)",
                                         "name": "result",
                                         "width": "150px",
                                         "add": "",
                                         "edit": {
                                             "type": "ValidationTextBox",
+                                            "width" : "300px",
                                             "validate": "^.+$"
                                         }
                                     },
@@ -587,6 +599,17 @@
                                         "edit": {
                                             "type": "NumberSpinner",
                                             "enabled": true
+                                        }
+                                    },
+                                    {
+                                        "caption": "Multiplikator",
+                                        "name": "mpx",
+                                        "width": "120px",
+                                        "add": "1",
+                                        "edit": {
+                                            "type": "NumberSpinner",
+                                            "value" : 1,
+                                            "digits" : 2
                                         }
                                     },
                                     {
