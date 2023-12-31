@@ -233,13 +233,13 @@
                 {
                     "type": "List",
                     "name": "sc_weatherforecast",
-                    "caption": "Anzeige",
+                    "caption": "Wetter-Anzeige",
                     "changeOrder": true,
                     "add": true,
                     "delete": true,
                     "columns": [
                         {
-                            "caption": "Variable",
+                            "caption": "Symbol-ID",
                             "name": "objectIdValueSymbol",
                             "width": "20%",
                             "add": 0,
@@ -248,7 +248,7 @@
                             }
                         },
                         {
-                        "caption": "caption",
+                        "caption": "obere Zeile",
                             "name": "caption",
                             "width": "20%",
                             "add" : "",
@@ -257,25 +257,25 @@
                             }
                         },
                         {
-                            "caption": "from",
+                            "caption": "von Zeichen (obere Zeile)",
                                 "name": "captionFrom",
-                                "width": "20%",
+                                "width": "5%",
                                 "add" : 0,
                                 "edit": {
                                     "type": "NumberSpinner"
                                 }
                             },
                             {
-                                "caption": "length",
+                                "caption": "Länge (obere Zeile)",
                                     "name": "captionLength",
-                                    "width": "20%",
+                                    "width": "5%",
                                     "add" : 99,
                                     "edit": {
                                         "type": "NumberSpinner"
                                     }
                                 },
                                     {
-                            "caption": "Variable",
+                            "caption": "untere Zeile",
                             "name": "objectIdValue",
                             "width": "20%",
                             "add": 0,

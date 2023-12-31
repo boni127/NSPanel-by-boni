@@ -505,9 +505,9 @@ require_once __DIR__ . '/icon-mapping.php';
 					$weatherForecast = json_decode($this->ReadPropertyString('sc_weatherforecast'),true);
 					$weatherOutput = array('weatherUpdate');
 					foreach ($weatherForecast as $element) {
-						#foreach ($element as $key => $value) {
-						#	$this->LogMessage('-- key '.$key.' value: '.$value,KL_NOTIFY);
-						#}
+						foreach ($element as $key => $value) {
+							$this->LogMessage('-- key '.$key.' value: '.$value,KL_NOTIFY);
+						}
 #						if (array_key_exists(GetValue($element['objectIdValueSymbol']),$weatherIcons)
 						$weatherOutput[] = '';
 						$weatherOutput[] = '';
@@ -542,7 +542,11 @@ require_once __DIR__ . '/icon-mapping.php';
 						} else {
 							$weatherOutput[] = '';
 						}
-						$weatherOutput[] = GetValueFormatted($element['objectIdValue']);
+						if (IPS_VariableExists($element['objectIdValue'])) {
+							$weatherOutput[] = GetValueFormatted($element['objectIdValue']);
+						} else {
+							$this->LogMessage('weather, display options: variable '.$element['objectIdValue']. ' does not exist',KL_ERROR);
+						}
 
 						#$this->LogMessage('##'.implode('~',$weatherOutput),KL_NOTIFY);
 

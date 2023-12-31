@@ -42,7 +42,7 @@ __Bedienung__:
 Die Ansteuerung des Displays erfolgt über die nativen Befehle für das NSPanel, die auf https://docs.nspanel.pky.eu und https://github.com/jobr99/nspanel-lovelace-ui dokumentiert sind.
 
 Die Instanzkonfiguration gliedert sich in den Konfigurations- und Aktions-Bereich, via MQTT Topic wird die ID des zu steuernden NSPanels konfiguriert.
-Der Bereich Screensaver ist weitestgehend selbsterklärend und wird mit Werten vorbelegt. Die alternativen DimModes sind weiter unten erläutert.
+Der Bereich [Screensaver](#ScreenSaver) wird weiter unten erläutert.
 
 Die drei Tabellen legen die 
 
@@ -75,7 +75,8 @@ ID   | Ebene  | zurück | Typ | Eintrag
 Die erste dargestellte Seite hat die ID **1**, von hier ausgehend wechseln die Navigationselemente am oberen Rand des Displays zu den Seiten **2**  und wieder auf die **1**.
 Seite **2** enthält einen Sprung auf die  Seite **1001** und **1002**. Gekennzeichnet durch den Eintrag in der Spalte *Ebene* wird hier zwischen den Seite **1001** und **1002** gewechselt. Der
 Rücksprung in die übergeordnete Ebene erfolgt bei Seite **1001** über den Eintrag *Ebene* zur Seite **1**, abweichend davon springt Seite **1002** auf die Seite **2** zurück. Somit weist *Ebene* nicht nur die 
-Zusammengehörigkeit der Menüeinträge aus, sondern auch die Rücksprungseite. 
+Zusammengehörigkeit der Menüeinträge aus, sondern auch die Rücksprungseite.
+
 Die Symbole  stellen die Icons da, die Nutzung der Icons ist weiter unten erläutert.
 
 
@@ -321,9 +322,22 @@ Bspw. hier an Spalte 5 für den zurück-Button.
 
 ### ScreenSaver
 
+Über `activate screensaver` lässt sich der Screensaver aktivieren. Als Standardaufruf ist schon
+
+`pageType~screensaver` 
+
+hinterlegt. Die Helligkeit des Screensavers wird über `screensaver DimMode 0` eingestellt:
+
+`dimmode~20~100`
+
+Der erste Wert `20` legt die Helligkeit bei aktiviertem Screensaver fest, der zweite Wert die Helligkeit, wenn der Saver nicht aktiv ist. `screensaver Timeout` legt die Zeit in Sekunden bis zum Starten des Screensavers fest.
+
+
+
+
 #### alternative DimMode's
 
-Über den Punkt `alternative DimMode` lassen sich 3 weitere dimModes definieren, die über das Kommando `DBNSP_SetDimMode(<0|1|2|3>)` von extern aufgerufen werden können. Beispielsweise über einen Wochenplan oder per Event bei Sonneauf- oder untergang.
+Über den Punkt `alternative DimMode` lassen sich 3 weitere DimModes definieren, die über das Kommando `DBNSP_SetDimMode(<0|1|2|3>)` von extern aufgerufen werden können. Beispielsweise über einen Wochenplan oder per Event bei Sonneauf- oder untergang.
 Der Parameter 0 ruft den unter dem Screensaver definierten DimMode `Screensaver DimMode 0` auf; 1,2,3 die entsprechenden DimModes. Beim Start des Moduls wird immer der zuletzt gesetzte DimMode aktiviert.
 DimMode 1-3 übersteueren den `DimMode after Screensaver Timeout`
 
@@ -335,12 +349,39 @@ Screensaver DimMode 0 | Screensaver Timeout | DimMode after Screensaver Timeout 
 --------------------- | ------------------- | --------------------------------- | ------------------------- | ---------------------
 dimmode\~20\~100        | timeout\~15          | aktiv                             | 1200                      | dimmode\~0\~50
 
-Der Screensaver wird nach 15 Sekunden aktiv, nach weiteren 20 Min (1200 s), startet der DimMode `Screensaver DimMode T` und die Anzeige des NSPanel wird in diesem Fall (dimmode~0~x) abgeschaltet.
-Der `DimMode after Screensaver Timeout` ist nur aktiv, wenn der DimMode via `DBNSP_SetDimMode` auf 0 (default) gesetzt ist.
+Der Screensaver wird nach 15 Sekunden aktiv, nach weiteren 20 Min (1200 s) abzüglich der 15 Sekunden des Screensaver-Timeouts, startet der DimMode `Screensaver DimMode T` und die Anzeige des NSPanel wird in diesem Fall (dimmode~0~x) abgeschaltet.
+Der `DimMode after Screensaver Timeout` ist nur aktiv, wenn der DimMode via `DBNSP_SetDimMode` auf 0 (default) gesetzt ist. Neben der IP-Adresse des Displays und der Software-Version wird in der oberen Zeile der aktuell eingestellte DimMode angezeigt.
 
-Über das Kommando `ActiveDimModeTimer` kann der Timer neu gestartet werden, beispielsweise um mittels Bewegungsmelder das NSPanel wieder zu aktivieren
+Über das Kommando `ActiveDimModeTimer` kann der Timer neu gestartet werden, beispielsweise um mittels Bewegungsmelder die Anzeige des NSPanel's wieder zu aktivieren
 
- 
+### Weatherforecast
+
+Die Anzeige der Wetterinformationen erfolgt auf dem Display im Screensaver unter der Datumsangabe. Der untere Bereich ist aufgeteilt in 5 Blöcke. Der erste Block zeigt ein großes Symbol und eine Textzeile unter dem Sysmbol an, die Blöcke 2-5 bestehen aus einer Textzeile als Überschrift, unter der Überschrift folgt das Symbol, abschließend eine weitere Textzeile.
+
+Aktiviert werden kann der Wetterbericht über den Switch `weatherforecast`. Der Switch `notify` hat eine höhere Priorität, ist er eingeschaltet, wird die Wettervorhersage nicht angezeigt.
+
+Die Konfiguration der Wettervorherge orientiert sich am Modul OpenWeatherMap von Ch. Damsky, Danke an dieser Stelle für das Modul.
+
+Über die Tabelle `Wetter-Anzeige` können die anzuzeigenden Infos zugeordnet werden. Der erste Eintrag repräsentiert das linke Symbol auf dem Display, der zweite das folgende Symbol u.s.w.
+
+* **Symbol-ID** ID des darzustellenden Icons (Zuordnung der Icons wird weiter unten beschrieben)
+* **obere Zeile** Variable mit dem Inhalt der oberen Zeile (wird beim ersten Eintrag ignoriert, da das Display hier keine obere Zeile ausgibt)
+* **von Zeichen (obere Zeile)** Startposition im Variableninhalt für die Ausgabe der oberen Zeile
+* **Länge (obere Zeile)** Anzahl der darzustellenden Zeichen des Variableninhalts
+* **untere Zeile** Variable mit dem Inhalt der untere Zeile (die Variable wird formatiert abgefragt)
+
+Zur Berechnung der oberen Zeile wird `substr` genutzt. Eine positive Zahl startet vom Anfang des Strings, eine negative vom Ende (siehe PHP-Dokumentation)
+
+Beispiel am Modul OpenWeatherMap
+
+Symbol-ID                 | obere Zeile                   | von Zeichen | Länge | untere Zeile           | Hinweis
+------------------------- | ----------------------------- | ----------- | ----- | ---------------------- | -------------------------------- 
+Wetterbedingung-Symbol    | Kein(e)                       | 0           | 99    | Temperatur             | (der erste Block zeigt keine obere Zeile an, somit kann oberer Zeile/ von / Länge auf dem Standard  stehen bleiben)
+Wetterbedingung-Symbol #1 | Beginn Vorhersage-Zeitraum #1 | -8          | 5     | maximale Temperatur #1 | Beginn Vorhersage-Zeitraum #1 enthält 31.12.2023, 16:00:00, von Ende 8 Zeichen rückwärts, dann 5 Zeichen ergibt 16:00, Achtung der Wert wird unformatiert ausgelesen
+Wetterbedingung-Symbol #2 | Beginn Vorhersage-Zeitraum #2 | -8          | 5     | maximale Temperatur #1 | Beginn Vorhersage-Zeitraum #1 enthält 31.12.2023, 16:00:00, vom Ende 8 Zeichen rückwärts, dann 5 Zeichen abzählen ergibt 16:00, Achtung der Wert wird unformatiert ausgelesen
+
+Die Variable Wetterbedingung enthält ein Kürzel für das entsprechende Symbol. Die Zuweisung der Symbole erfolgt über die Tabelle Symbol-Zuordnung.
+
 ### 5. Statusvariablen und Profile
 
 
