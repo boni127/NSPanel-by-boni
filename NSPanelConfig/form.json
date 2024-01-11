@@ -13,22 +13,37 @@
                     "name" : "PanelIp",
                     "caption" : "IP-Address",
                     "enabled" : false,
-                    "width" : "250px"
+                    "width" : "120px"
                 },
                 {
                     "type": "ValidationTextBox",
                     "name" : "PanelVersion",
                     "caption" : "Panel Version",
                     "enabled" : false,
-                    "width" : "150px"
+                    "width" : "100px"
                 },
                 {
                     "type": "NumberSpinner",
                     "name":"sc_dimModeState",
                     "caption": "current DimMode",
+                    "width" : "100px",
+                    "enabled": false
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name":"sc_weatherKey",
+                    "caption": "weather filter key",
                     "width" : "150px",
                     "enabled": false
+                },
+                {
+                    "type" : "NumberSpinner",
+                    "name" : "Version",
+                    "caption" : "data-Version",
+                    "width" : "50px",
+                    "enabled" : false
                 }
+
             ]
         },
         {
@@ -47,9 +62,14 @@
 
                     },
                     {
-                        "type": "ValidationTextBox",
+                        "type": "Select",
+                        "options": [
+                            { "caption": "default", "value": 1 },
+                            { "caption": "alternative", "value": 2 }
+                        ],
                         "name": "sc",
-                        "caption": "Screensaver"
+                        "caption": "screensaver",
+                        "width": "100px"
                     }
                     ]
                 },
@@ -67,7 +87,7 @@
                     {
                         "type" : "Select", 
                         "name" : "defaultPage",
-                        "width" : "75px", 
+                        "width" : "100px", 
                         "caption" : "page",
                         "options" : [
                         ]
@@ -121,7 +141,7 @@
                     "caption": "alternative DimMode",
                     "items" : [
                         {   "type": "Label", 
-                            "caption": "this dimMode's could be called via the command DBNSP_SetDimMode <0|1|2|3>. Option 0 is the default dimMode defined above in Screensaver DimOde 0. Option 1 dimMode 1 and so on." 
+                            "caption": "these dimMode's could be called via the command DBNSP_SetDimMode <0|1|2|3>. Option 0 is the default dimMode defined above in Screensaver DimOde 0. Option 1 dimMode 1 and so on." 
                         },
                         {
                             "type" : "ValidationTextBox",
@@ -201,23 +221,26 @@
                     "delete": true,
                     "columns": [
                         {
-                        "caption": "WeatherApi-Code",
+                            "caption": "WeatherApi-Code",
                             "name": "assignment",
                             "width": "14%",
                             "add" : "",
                             "edit": {
-                                "type": "ValidationTextBox"
+                                "type": "ValidationTextBox",
+                                "validate": "^.+$"
                             }
                         },
                         {
                             "caption": "Icon-Farbe",
-                                "name": "iconColor",
-                                "width": "10%",
-                                "add" : 17560,
-                                "edit": {
-                                    "type": "NumberSpinner"
-                                }
-                        },
+                            "name": "iconColor",
+                            "width": "10%",
+                            "enabled" : true,
+                            "visible" : false,
+                            "add" : "",
+                            "edit": {
+                                "type": "NumberSpinner"
+                            }
+                    },
                         {
                             "caption": "Lovelace Icon",
                                 "name": "icon",
@@ -227,6 +250,16 @@
                                     "type": "Select",
                                     "options": [ ]
                                 }
+                        },
+                        { 
+                            "name": "iconColor888", 
+                            "caption": "Color",
+                            "width" : "10%",
+                            "add" : 16777215,
+                            "edit" : {
+                                "type": "SelectColor",
+                                "onChange": "IPS_RequestAction($id,'setIconColor',$iconColor888);"
+                            } 
                         }
                     ]
                 },
@@ -234,10 +267,47 @@
                     "type": "List",
                     "name": "sc_weatherforecast",
                     "caption": "Wetter-Anzeige",
-                    "changeOrder": true,
                     "add": true,
                     "delete": true,
+                    "changeOrder": true,
+                    "rowCount" : 8,
                     "columns": [
+                        {
+                            "caption": "Position",
+                            "name": "position",
+                            "width" : "5%",
+                            "add" : 0,
+                            "edit" :{
+                                "type" : "Select",
+                                "options": [
+                                    { "caption": "-", "value": 0 },
+                                    { "caption": "1", "value": 1 },
+                                    { "caption": "2", "value": 2 },
+                                    { "caption": "3", "value": 3 },
+                                    { "caption": "4", "value": 4 },
+                                    { "caption": "5", "value": 5 },
+                                    { "caption": "6", "value": 6 },
+                                    { "caption": "7", "value": 7 },
+                                    { "caption": "8", "value": 8 },
+                                    { "caption": "9", "value": 9 },
+                                    { "caption": "10", "value": 10 },
+                                    { "caption": "11", "value": 11 },
+                                    { "caption": "12", "value": 12 },
+                                    { "caption": "13", "value": 13 },
+                                    { "caption": "14", "value": 14 },
+                                    { "caption": "15", "value": 15 }
+                                ]
+                            }
+                        },
+                        {
+                            "caption": "Key",
+                            "name" : "key",
+                            "width" : "5%",
+                            "add" : "",
+                            "edit" : {
+                                "type" : "ValidationTextBox"
+                            }
+                        },
                         {
                             "caption": "Symbol-ID",
                             "name": "objectIdValueSymbol",
@@ -251,7 +321,7 @@
                         "caption": "obere Zeile",
                             "name": "caption",
                             "width": "20%",
-                            "add" : "",
+                            "add" : 0,
                             "edit": {
                                 "type": "SelectObject"
                             }
