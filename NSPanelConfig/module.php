@@ -46,6 +46,8 @@ require_once __DIR__ . '/icon-mapping.php';
 			$this->RegisterPropertyString('sc_dimMode_cmd3','dimmode~50~100'); # alternativer DimMode 3
 			$this->RegisterAttributeInteger('sc_dimModeState',0); # aktiver DimMode 
 			$this->RegisterAttributeString('sc_weatherKey',''); # Filterkey für Icons in Wetteranzeige
+			$this->RegisterPropertyString('sc_color',''); # Farbschemata
+			$this->RegisterAttributeString('sc_color_565','');
 
 
 			$this->RegisterPropertyString('sc_timeout','timeout~15');
@@ -317,7 +319,7 @@ require_once __DIR__ . '/icon-mapping.php';
 
 		}
 
-		function Set_WeatherFilterKey(string $key) {
+		function SetWeatherFilterKey(string $key) {
 			$this->WriteAttributeString('sc_weatherKey',$key);
 			$this->LogMessage('set weatherIcons filter to: -'.$key.'-',KL_NOTIFY);
 			if ($this->ReadAttributeBoolean('sc_state_active')) {
@@ -328,6 +330,28 @@ require_once __DIR__ . '/icon-mapping.php';
 					$this->sendMqtt_CustomSend(array($this->genScreenSaverCmd($key)));
 				}
 			}
+		}
+
+		function SetColorSchema(string $schema) {
+			$this->LogMessage('FarbSchema:'.$schema,KL_NOTIFY);
+			$foundSchema=false;
+			foreach(json_decode($this->ReadPropertyString('sc_color'),true) as $key => $value) {
+				if ($value['schema'] == $schema) {
+					$foundSchema=true;
+					$colorArray = array_values($value);
+					$colorArray[0]='color';
+					for ($i=1;$i<sizeof($colorArray);$i++) {
+						$colorArray[$i] = $this->convertRGB888to565($colorArray[$i]);
+					}
+				}
+			}
+			if ($foundSchema) {
+				$this->WriteAttributeString('sc_color_565',implode('~',$colorArray));
+			} else {
+				$this->WriteAttributeString('sc_color_565','color~0~65535~65535~65535~65535~65535~65535~65535~65535~65535~65535~65535~65535~65535~65535~65535');
+			}
+			$this->sendMqtt_CustomSend(array($this->ReadAttributeString('sc_color_565')));
+	
 		}
 
 		private function registerVariableToMessageSink (bool $register ) {
@@ -912,6 +936,9 @@ require_once __DIR__ . '/icon-mapping.php';
 			$this->RegisterVariableString($save_name."action$cnt",$save_name." $cnt: action");
 			$this->SetValue($save_name."action$cnt",json_encode($this->ReadPropertyString('panelActionValuesArray')));
 
+			$this->RegisterVariableString($save_name."weather$cnt",$save_name." $cnt: weather");
+			$this->SetValue($save_name."weather$cnt",json_encode(array($this->ReadPropertyString('sc_weatherforecast'),$this->ReadPropertyString('sc_wc_assignIcons'))));
+
 			$this->UpdateFormField("save","enabled",false);
 		}
 
@@ -923,6 +950,9 @@ require_once __DIR__ . '/icon-mapping.php';
 				$this->UpdateFormField('panelPageValuesArray','values',json_decode($this->GetValue($backupname)));
 			} elseif (preg_match('/backupaction\d+/',$backupname) ) {
 				$this->UpdateFormField('panelActionValuesArray','values',json_decode($this->GetValue($backupname)));
+			} elseif (preg_match('/backupweather\d+/',$backupname) ) {
+				$this->UpdateFormField('sc_weatherforecast','values',json_decode($this->GetValue($backupname))[0]);
+				$this->UpdateFormField('sc_wc_assignIcons','values',json_decode($this->GetValue($backupname))[1]);
 			}
 		}
 
@@ -1326,13 +1356,15 @@ require_once __DIR__ . '/icon-mapping.php';
 			if ($restoreScreensaver && $result[1] == 'screensaver') {
 				if ($this->ReadPropertyInteger('sc') == 1) {
 					$this->sendMqtt_CustomSend(array(self::ScreenSaver1));
+
 				} else {
 					$this->sendMqtt_CustomSend(array(self::ScreenSaver2));
 				}
+				if (!empty($this->ReadAttributeString('sc_color_565'))) {
+					$this->sendMqtt_CustomSend(array($this->ReadAttributeString('sc_color_565')));  #DB COLOR
+				}
 			}
 		}
-
-
 
 		public function ReceiveData($JSONString)
 		{
@@ -1411,6 +1443,9 @@ require_once __DIR__ . '/icon-mapping.php';
 									$this->sendMqtt_CustomSend(array(self::ScreenSaver1));
 								} else {
 									$this->sendMqtt_CustomSend(array(self::ScreenSaver2));
+								}
+								if (!empty($this->ReadAttributeString('sc_color_565'))) {
+									$this->sendMqtt_CustomSend(array($this->ReadAttributeString('sc_color_565')));  #DB COLOR
 								}
 								$this->WriteAttributeBoolean('sc_state_active',1);
 								if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('state sc: active',KL_NOTIFY);
@@ -1531,7 +1566,7 @@ require_once __DIR__ . '/icon-mapping.php';
 			# Bereich elements
 
 			reset($panelPage);
-
+			#$this->LogMessage(print_r($Form['elements'],true),KL_NOTIFY);
 			foreach ($Form['elements'] as $keyLayer0 => $elementLayer0) {
 
 				# Screensaver 
@@ -1539,7 +1574,6 @@ require_once __DIR__ . '/icon-mapping.php';
 					if ($elementLayer1 === 'ExpansionPanel') {
 						foreach ($Form['elements'][$keyLayer0]['items'] as $keyLayer2 => $elementLayer2) {
 							foreach ($Form['elements'][$keyLayer0]['items'][$keyLayer2] as $keyLayer3 => $elementLayer3) {
-								#$this->LogMessage('#####'.$keyLayer2.'--'.$elementLayer3,KL_NOTIFY);
 								if ($elementLayer3 === 'RowLayout') {
 									foreach($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'] as $keyLayer4 => $elementLayer4) {
 										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc') {
@@ -1577,19 +1611,16 @@ require_once __DIR__ . '/icon-mapping.php';
 										}
 									}
 								}
-								if ($elementLayer3 === 'sc_wc_assignIcons' ) {
-									#$this->LogMessage("sc_wc_assignIcons",KL_NOTIFY);
-#									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][1]['edit']['options'][0]['caption'] = "Wert";#
-#									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][1]['edit']['options'][0]['value'] = 2;
-
-									$iconOptions = [];
-
-									foreach ($this->icons as $key => $value) {
-										array_push($iconOptions, ['caption' => $key, 'value' => $key]);
+								if ($elementLayer3 === 'Symbolzuordnung') {
+									foreach($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'] as $keyLayer5 => $elementLayer5) {
+										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer5]['name'] === 'sc_wc_assignIcons' ) {
+											$iconOptions = [];
+											foreach ($this->icons as $key => $value) {
+												array_push($iconOptions, ['caption' => $key, 'value' => $key]);
+											}
+											$Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer5]['columns'][2]['edit']['options']=$iconOptions;
+										}
 									}
-									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['columns'][2]['edit']['options']=$iconOptions;
-									
-									
 								}
 							}
 						}
@@ -1700,7 +1731,7 @@ require_once __DIR__ . '/icon-mapping.php';
 							$cnt=0;
 							foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
 								$backupname=(IPS_GetObject($id))['ObjectIdent'];
-								if (preg_match('/backup(pages|assignment|action)\d+/',(IPS_GetObject($id))['ObjectIdent'])) {
+								if (preg_match('/backup(pages|assignment|action|weather)\d+/',(IPS_GetObject($id))['ObjectIdent'])) {
 									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['caption'] = (IPS_GetObject($id))['ObjectName'];
 									$Form['actions'][$key]['items'][$keyItem]['options'][$cnt]['value'] = (IPS_GetObject($id))['ObjectIdent'];
 									$cnt++;

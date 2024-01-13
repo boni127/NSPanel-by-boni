@@ -1,8 +1,8 @@
 {
     "elements": [
         {
-            "type" : "RowLayout",
-            "items": [  
+            "type": "RowLayout",
+            "items": [
                 {
                     "type": "ValidationTextBox",
                     "name": "topic",
@@ -10,96 +10,98 @@
                 },
                 {
                     "type": "ValidationTextBox",
-                    "name" : "PanelIp",
-                    "caption" : "IP-Address",
-                    "enabled" : false,
-                    "width" : "120px"
+                    "name": "PanelIp",
+                    "caption": "IP-Address",
+                    "enabled": false,
+                    "width": "120px"
                 },
                 {
                     "type": "ValidationTextBox",
-                    "name" : "PanelVersion",
-                    "caption" : "Panel Version",
-                    "enabled" : false,
-                    "width" : "100px"
+                    "name": "PanelVersion",
+                    "caption": "Panel Version",
+                    "enabled": false,
+                    "width": "100px"
                 },
                 {
                     "type": "NumberSpinner",
-                    "name":"sc_dimModeState",
+                    "name": "sc_dimModeState",
                     "caption": "current DimMode",
-                    "width" : "100px",
+                    "width": "100px",
                     "enabled": false
                 },
                 {
                     "type": "ValidationTextBox",
-                    "name":"sc_weatherKey",
+                    "name": "sc_weatherKey",
                     "caption": "weather filter key",
-                    "width" : "150px",
+                    "width": "150px",
                     "enabled": false
                 },
                 {
-                    "type" : "NumberSpinner",
-                    "name" : "Version",
-                    "caption" : "data-Version",
-                    "width" : "50px",
-                    "enabled" : false
+                    "type": "NumberSpinner",
+                    "name": "Version",
+                    "caption": "data-Version",
+                    "width": "50px",
+                    "enabled": false
                 }
-
             ]
         },
         {
             "type": "ExpansionPanel",
             "caption": "Screensaver",
-            "items" : [
+            "items": [
                 {
-                    "type" : "RowLayout",
-                    "items" : [
-                    {
-                        "type" :"CheckBox", 
-                        "name": "sc_active", 
-                        "caption": "activate screensaver",
-                        "width": "200px",
-                        "onChange" : "IPS_RequestAction($id,'toggleSc_active',$sc_active);"
-
-                    },
-                    {
-                        "type": "Select",
-                        "options": [
-                            { "caption": "default", "value": 1 },
-                            { "caption": "alternative", "value": 2 }
-                        ],
-                        "name": "sc",
-                        "caption": "screensaver",
-                        "width": "100px"
-                    }
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "sc_active",
+                            "caption": "activate screensaver",
+                            "width": "200px",
+                            "onChange": "IPS_RequestAction($id,'toggleSc_active',$sc_active);"
+                        },
+                        {
+                            "type": "Select",
+                            "options": [
+                                {
+                                    "caption": "default",
+                                    "value": 1
+                                },
+                                {
+                                    "caption": "alternative",
+                                    "value": 2
+                                }
+                            ],
+                            "name": "sc",
+                            "caption": "screensaver",
+                            "width": "100px"
+                        }
                     ]
                 },
                 {
-                "type" : "RowLayout",
-                "items": [  
-                    {
-                        "type" :"CheckBox", 
-                        "name": "defaultPageActive", 
-                        "caption": "call default page",
-                        "width": "200px",
-                        "onChange" : "IPS_RequestAction($id,'toggleDefaultPageActive',$defaultPageActive);"
-
-                    },
-                    {
-                        "type" : "Select", 
-                        "name" : "defaultPage",
-                        "width" : "100px", 
-                        "caption" : "page",
-                        "options" : [
-                        ]
-                    },
-                    {
-                        "type" : "NumberSpinner",
-                        "name" : "defaultPageTime",
-                        "caption" : "time to wait, in s",
-                        "minimum" : 5
-                    }
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "defaultPageActive",
+                            "caption": "call default page",
+                            "width": "200px",
+                            "onChange": "IPS_RequestAction($id,'toggleDefaultPageActive',$defaultPageActive);"
+                        },
+                        {
+                            "type": "Select",
+                            "name": "defaultPage",
+                            "width": "100px",
+                            "caption": "page",
+                            "options": []
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "defaultPageTime",
+                            "caption": "time to wait, in s",
+                            "minimum": 5
+                        }
                     ]
-                },    
+                },
                 {
                     "type": "ValidationTextBox",
                     "name": "sc_dimMode",
@@ -111,249 +113,479 @@
                     "caption": "Screensaver Timeout"
                 },
                 {
-                    "type" : "RowLayout",
-                    "items" : [
+                    "type": "RowLayout",
+                    "items": [
                         {
-                            "type" : "CheckBox",
-                            "name" : "sc_powersafeTime_active",
-                            "caption" : "DimMode after Screensaver Timeout",
-                            "width" : "250px",
-                            "onChange" : "IPS_RequestAction($id,'toggleSc_powersafeTime',$sc_powersafeTime_active);"
-
+                            "type": "CheckBox",
+                            "name": "sc_powersafeTime_active",
+                            "caption": "DimMode after Screensaver Timeout",
+                            "width": "250px",
+                            "onChange": "IPS_RequestAction($id,'toggleSc_powersafeTime',$sc_powersafeTime_active);"
                         },
                         {
-                            "type" : "NumberSpinner",
-                            "name" : "sc_powersafeTime",
-                            "caption" : "time until DimMode starts, in sec.",
-                            "minimum" : 0,
-                            "width" : "200px"
+                            "type": "NumberSpinner",
+                            "name": "sc_powersafeTime",
+                            "caption": "time until DimMode starts, in sec.",
+                            "minimum": 0,
+                            "width": "200px"
                         },
                         {
-                            "type" : "ValidationTextBox",
-                            "name" : "sc_powersafeCmd",
-                            "caption" : "Screensaver DimMode T",
-                            "width" : "300px"
+                            "type": "ValidationTextBox",
+                            "name": "sc_powersafeCmd",
+                            "caption": "Screensaver DimMode T",
+                            "width": "300px"
                         }
                     ]
                 },
                 {
                     "type": "ExpansionPanel",
                     "caption": "alternative DimMode",
-                    "items" : [
-                        {   "type": "Label", 
-                            "caption": "these dimMode's could be called via the command DBNSP_SetDimMode <0|1|2|3>. Option 0 is the default dimMode defined above in Screensaver DimOde 0. Option 1 dimMode 1 and so on." 
+                    "items": [
+                        {
+                            "type": "Label",
+                            "caption": "these dimMode's could be called via the command DBNSP_SetDimMode <0|1|2|3>. Option 0 is the default dimMode defined above in Screensaver DimOde 0. Option 1 dimMode 1 and so on."
                         },
                         {
-                            "type" : "ValidationTextBox",
-                            "name" : "sc_dimMode_cmd1",
-                            "caption" : "ScreenSaver DimMode 1"
+                            "type": "ValidationTextBox",
+                            "name": "sc_dimMode_cmd1",
+                            "caption": "ScreenSaver DimMode 1"
                         },
                         {
-                            "type" : "ValidationTextBox",
-                            "name" : "sc_dimMode_cmd2",
-                            "caption" : "ScreenSaver DimMode 2"
+                            "type": "ValidationTextBox",
+                            "name": "sc_dimMode_cmd2",
+                            "caption": "ScreenSaver DimMode 2"
                         },
                         {
-                            "type" : "ValidationTextBox",
-                            "name" : "sc_dimMode_cmd3",
-                            "caption" : "ScreenSaver DimMode 3"
-                        }
-                    ]
-                },
-
-                {
-                    "type" : "RowLayout",
-                    "items" : [
-                        {
-                            "type" : "CheckBox",
-                            "name" : "sc_acceptMultiClicks",
-                            "caption" : "accept multiclicks",
-                            "width": "200px",
-                            "onChange" : "IPS_RequestAction($id,'toggleSc_multiClick',$sc_acceptMultiClicks);"
-                        },
-                        {
-                            "type" : "NumberSpinner",
-                            "name" : "sc_multiClickWaitTime",
-                            "caption" : "time to wait for multiClicks in ms",
-                            "minimum" : 250,
-                            "maximum" : 2500
-                        }
-                   ]
-                },
-                {
-                    "type" : "CheckBox",
-                    "name" : "sc_acceptSwipes",
-                    "caption" : "accept swipes"
-                },
-                {
-                    "type" : "RowLayout",
-                    "items" : [
-                        {
-                            "type" : "CheckBox",
-                            "name" : "sc_notifyActive",
-                            "caption" : "notify",
-                            "width": "200px",
-                            "onChange" : "IPS_RequestAction($id,'toggleSc_notifyActive',$sc_notifyActive);"
-                        },
-                        {
-                            "type" : "SelectObject",
-                            "name" : "sc_notifyHeading",
-                            "caption" : "heading"
-                        },
-                        {
-                            "type" : "SelectObject",
-                            "name" : "sc_notifyText",
-                            "caption" : "text"
+                            "type": "ValidationTextBox",
+                            "name": "sc_dimMode_cmd3",
+                            "caption": "ScreenSaver DimMode 3"
                         }
                     ]
                 },
                 {
-                    "type"  :"CheckBox",
-                    "name" : "sc_weatherActive",
-                    "caption" : "Weatherforecast"              
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "sc_acceptMultiClicks",
+                            "caption": "accept multiclicks",
+                            "width": "200px",
+                            "onChange": "IPS_RequestAction($id,'toggleSc_multiClick',$sc_acceptMultiClicks);"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "sc_multiClickWaitTime",
+                            "caption": "time to wait for multiClicks in ms",
+                            "minimum": 250,
+                            "maximum": 2500
+                        }
+                    ]
                 },
                 {
-                    "type": "List",
-                    "name": "sc_wc_assignIcons",
+                    "type": "CheckBox",
+                    "name": "sc_acceptSwipes",
+                    "caption": "accept swipes"
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "sc_notifyActive",
+                            "caption": "notify",
+                            "width": "200px",
+                            "onChange": "IPS_RequestAction($id,'toggleSc_notifyActive',$sc_notifyActive);"
+                        },
+                        {
+                            "type": "SelectObject",
+                            "name": "sc_notifyHeading",
+                            "caption": "heading"
+                        },
+                        {
+                            "type": "SelectObject",
+                            "name": "sc_notifyText",
+                            "caption": "text"
+                        }
+                    ]
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "sc_weatherActive",
+                    "caption": "Weatherforecast"
+                },
+                {
+                    "type": "ExpansionPanel",
                     "caption": "Symbolzuordnung",
-                    "add": true,
-                    "changeOrder": true,
-                    "delete": true,
-                    "columns": [
+                    "items": [
                         {
-                            "caption": "WeatherApi-Code",
-                            "name": "assignment",
-                            "width": "14%",
-                            "add" : "",
-                            "edit": {
-                                "type": "ValidationTextBox",
-                                "validate": "^.+$"
-                            }
-                        },
-                        {
-                            "caption": "Icon-Farbe",
-                            "name": "iconColor",
-                            "width": "10%",
-                            "enabled" : true,
-                            "visible" : false,
-                            "add" : "",
-                            "edit": {
-                                "type": "NumberSpinner"
-                            }
-                    },
-                        {
-                            "caption": "Lovelace Icon",
-                                "name": "icon",
-                                "width": "24%",
-                                "add" : "",
-                                "edit": {
-                                    "type": "Select",
-                                    "options": [ ]
-                                }
-                        },
-                        { 
-                            "name": "iconColor888", 
-                            "caption": "Color",
-                            "width" : "10%",
-                            "add" : 16777215,
-                            "edit" : {
-                                "type": "SelectColor",
-                                "onChange": "IPS_RequestAction($id,'setIconColor',$iconColor888);"
-                            } 
-                        }
-                    ]
-                },
-                {
-                    "type": "List",
-                    "name": "sc_weatherforecast",
-                    "caption": "Wetter-Anzeige",
-                    "add": true,
-                    "delete": true,
-                    "changeOrder": true,
-                    "rowCount" : 8,
-                    "columns": [
-                        {
-                            "caption": "Position",
-                            "name": "position",
-                            "width" : "5%",
-                            "add" : 0,
-                            "edit" :{
-                                "type" : "Select",
-                                "options": [
-                                    { "caption": "-", "value": 0 },
-                                    { "caption": "1", "value": 1 },
-                                    { "caption": "2", "value": 2 },
-                                    { "caption": "3", "value": 3 },
-                                    { "caption": "4", "value": 4 },
-                                    { "caption": "5", "value": 5 },
-                                    { "caption": "6", "value": 6 },
-                                    { "caption": "7", "value": 7 },
-                                    { "caption": "8", "value": 8 },
-                                    { "caption": "9", "value": 9 },
-                                    { "caption": "10", "value": 10 },
-                                    { "caption": "11", "value": 11 },
-                                    { "caption": "12", "value": 12 },
-                                    { "caption": "13", "value": 13 },
-                                    { "caption": "14", "value": 14 },
-                                    { "caption": "15", "value": 15 }
-                                ]
-                            }
-                        },
-                        {
-                            "caption": "Key",
-                            "name" : "key",
-                            "width" : "5%",
-                            "add" : "",
-                            "edit" : {
-                                "type" : "ValidationTextBox"
-                            }
-                        },
-                        {
-                            "caption": "Symbol-ID",
-                            "name": "objectIdValueSymbol",
-                            "width": "20%",
-                            "add": 0,
-                            "edit": {
-                                "type": "SelectObject" 
-                            }
-                        },
-                        {
-                        "caption": "obere Zeile",
-                            "name": "caption",
-                            "width": "20%",
-                            "add" : 0,
-                            "edit": {
-                                "type": "SelectObject"
-                            }
-                        },
-                        {
-                            "caption": "von Zeichen (obere Zeile)",
-                                "name": "captionFrom",
-                                "width": "5%",
-                                "add" : 0,
-                                "edit": {
-                                    "type": "NumberSpinner"
-                                }
-                            },
-                            {
-                                "caption": "Länge (obere Zeile)",
-                                    "name": "captionLength",
-                                    "width": "5%",
-                                    "add" : 99,
+                            "type": "List",
+                            "name": "sc_wc_assignIcons",
+                            "caption": "Symbolzuordnung",
+                            "add": true,
+                            "changeOrder": true,
+                            "delete": true,
+                            "rowCount": 8,
+                            "columns": [
+                                {
+                                    "caption": "WeatherApi-Code",
+                                    "name": "assignment",
+                                    "width": "14%",
+                                    "add": "",
+                                    "edit": {
+                                        "type": "ValidationTextBox",
+                                        "validate": "^.+$"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon-Farbe",
+                                    "name": "iconColor",
+                                    "width": "10%",
+                                    "enabled": true,
+                                    "visible": false,
+                                    "add": "",
                                     "edit": {
                                         "type": "NumberSpinner"
                                     }
                                 },
-                                    {
-                            "caption": "untere Zeile",
-                            "name": "objectIdValue",
-                            "width": "20%",
-                            "add": 0,
-                            "edit": {
-                                "type": "SelectObject", 
-                                "options" : [
-                                ]
-                            }
+                                {
+                                    "caption": "Lovelace Icon",
+                                    "name": "icon",
+                                    "width": "24%",
+                                    "add": "",
+                                    "edit": {
+                                        "type": "Select",
+                                        "options": []
+                                    }
+                                },
+                                {
+                                    "name": "iconColor888",
+                                    "caption": "Color",
+                                    "width": "10%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor",
+                                        "onChange": "IPS_RequestAction($id,'setIconColor',$iconColor888);"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "ExpansionPanel",
+                    "caption": "Wetter-Anzeige",
+                    "items": [
+                        {
+                            "type": "List",
+                            "name": "sc_weatherforecast",
+                            "caption": "Wetter-Anzeige",
+                            "add": true,
+                            "delete": true,
+                            "changeOrder": true,
+                            "rowCount": 8,
+                            "columns": [
+                                {
+                                    "caption": "Position",
+                                    "name": "position",
+                                    "width": "5%",
+                                    "add": 0,
+                                    "edit": {
+                                        "type": "Select",
+                                        "options": [
+                                            {
+                                                "caption": "-",
+                                                "value": 0
+                                            },
+                                            {
+                                                "caption": "1",
+                                                "value": 1
+                                            },
+                                            {
+                                                "caption": "2",
+                                                "value": 2
+                                            },
+                                            {
+                                                "caption": "3",
+                                                "value": 3
+                                            },
+                                            {
+                                                "caption": "4",
+                                                "value": 4
+                                            },
+                                            {
+                                                "caption": "5",
+                                                "value": 5
+                                            },
+                                            {
+                                                "caption": "6",
+                                                "value": 6
+                                            },
+                                            {
+                                                "caption": "7",
+                                                "value": 7
+                                            },
+                                            {
+                                                "caption": "8",
+                                                "value": 8
+                                            },
+                                            {
+                                                "caption": "9",
+                                                "value": 9
+                                            },
+                                            {
+                                                "caption": "10",
+                                                "value": 10
+                                            },
+                                            {
+                                                "caption": "11",
+                                                "value": 11
+                                            },
+                                            {
+                                                "caption": "12",
+                                                "value": 12
+                                            },
+                                            {
+                                                "caption": "13",
+                                                "value": 13
+                                            },
+                                            {
+                                                "caption": "14",
+                                                "value": 14
+                                            },
+                                            {
+                                                "caption": "15",
+                                                "value": 15
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "caption": "Key",
+                                    "name": "key",
+                                    "width": "5%",
+                                    "add": "",
+                                    "edit": {
+                                        "type": "ValidationTextBox"
+                                    }
+                                },
+                                {
+                                    "caption": "Symbol-ID",
+                                    "name": "objectIdValueSymbol",
+                                    "width": "20%",
+                                    "add": 0,
+                                    "edit": {
+                                        "type": "SelectObject"
+                                    }
+                                },
+                                {
+                                    "caption": "obere Zeile",
+                                    "name": "caption",
+                                    "width": "20%",
+                                    "add": 0,
+                                    "edit": {
+                                        "type": "SelectObject"
+                                    }
+                                },
+                                {
+                                    "caption": "von Zeichen (obere Zeile)",
+                                    "name": "captionFrom",
+                                    "width": "5%",
+                                    "add": 0,
+                                    "edit": {
+                                        "type": "NumberSpinner"
+                                    }
+                                },
+                                {
+                                    "caption": "Länge (obere Zeile)",
+                                    "name": "captionLength",
+                                    "width": "5%",
+                                    "add": 99,
+                                    "edit": {
+                                        "type": "NumberSpinner"
+                                    }
+                                },
+                                {
+                                    "caption": "untere Zeile",
+                                    "name": "objectIdValue",
+                                    "width": "20%",
+                                    "add": 0,
+                                    "edit": {
+                                        "type": "SelectObject",
+                                        "options": []
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "ExpansionPanel",
+                    "caption": "Screensaver Farben",
+                    "items": [
+                        {
+                            "type": "List",
+                            "name": "sc_color",
+                            "caption": "Farben",
+                            "add": true,
+                            "changeOrder": true,
+                            "delete": true,
+                            "rowCount": 8,
+                            "columns": [
+                                {
+                                    "caption": "Farbschema",
+                                    "name": "schema",
+                                    "width": "10%",
+                                    "add": "",
+                                    "edit": {
+                                        "type": "ValidationTextBox",
+                                        "validate": "^.+$"
+                                    }
+                                },
+                                {
+                                    "caption": "Hintergrund",
+                                    "name": "background",
+                                    "width": "5%",
+                                    "add": 0,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Zeitanzeige",
+                                    "name": "ttime",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "timeAMPM",
+                                    "name": "timeampm",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "tdate",
+                                    "name": "Datum",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "tmaintext",
+                                    "name": "Uhrzeit",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 1 Überschrift",
+                                    "name": "tforecast1",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 1 untere Zeile",
+                                    "name": "tforecastval1",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 1 Überschrift",
+                                    "name": "tforecast2",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 1 untere Zeile",
+                                    "name": "tforecastval2",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 1 Überschrift",
+                                    "name": "tforecast3",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 1 untere Zeile",
+                                    "name": "tforecastval3",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 1 Überschrift",
+                                    "name": "tforecast4",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 1 untere Zeile",
+                                    "name": "tforecastval4",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Trennlinie",
+                                    "name": "bar",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "Icon 6 Text",
+                                    "name": "tmaintextalt2",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                },
+                                {
+                                    "caption": "tTimeAdd",
+                                    "name": "ttimeadd",
+                                    "width": "5%",
+                                    "add": 16777215,
+                                    "edit": {
+                                        "type": "SelectColor"
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }
@@ -362,16 +594,16 @@
         {
             "type": "ExpansionPanel",
             "caption": "Options",
-            "items" : [
+            "items": [
                 {
-                    "type" : "CheckBox",
-                    "name" : "option73",
-                    "caption" : "detach buttons from relais"
+                    "type": "CheckBox",
+                    "name": "option73",
+                    "caption": "detach buttons from relais"
                 },
                 {
-                    "type" : "CheckBox",
-                    "name" : "option0",
-                    "caption" : "Save power state and use after restart"
+                    "type": "CheckBox",
+                    "name": "option0",
+                    "caption": "Save power state and use after restart"
                 }
             ]
         },
@@ -381,14 +613,15 @@
             "caption": "Seitendefinition",
             "add": true,
             "delete": true,
-            "onDelete" : "IPS_RequestAction($id,'deletePagePanelPageConf',0);",
-            "changeOrder" : true,
+            "onDelete": "IPS_RequestAction($id,'deletePagePanelPageConf',0);",
+            "changeOrder": true,
+            "rowCount": 8,
             "columns": [
                 {
                     "caption": "ID",
                     "name": "id",
                     "width": "4%",
-                    "add" : "",
+                    "add": "",
                     "edit": {
                         "type": "NumberSpinner",
                         "minimum": 0,
@@ -399,7 +632,7 @@
                     "caption": "Ebene",
                     "name": "main",
                     "width": "4%",
-                    "add" : "",
+                    "add": "",
                     "edit": {
                         "type": "ValidationTextBox",
                         "validate": "^[0-9]{0,4}$"
@@ -409,17 +642,17 @@
                     "caption": "zurück zu",
                     "name": "return",
                     "width": "4%",
-                    "add" : "",
+                    "add": "",
                     "edit": {
                         "type": "ValidationTextBox",
                         "validate": "^[0-9]{0,4}$"
                     }
-                },          
+                },
                 {
                     "caption": "Typ",
                     "name": "type",
                     "width": "10%",
-                    "add" : "",
+                    "add": "",
                     "edit": {
                         "type": "ValidationTextBox"
                     }
@@ -428,17 +661,17 @@
                     "caption": "Eintrag",
                     "name": "entry",
                     "width": "68%",
-                    "add" : "",
+                    "add": "",
                     "edit": {
                         "type": "ValidationTextBox",
                         "width": "100%"
                     }
-                } 
+                }
             ]
         },
         {
-            "type" : "RowLayout",
-            "items" : [
+            "type": "RowLayout",
+            "items": [
                 {
                     "type": "List",
                     "name": "panelPageValuesArray",
@@ -452,14 +685,12 @@
                             "name": "panelPage",
                             "width": "50px",
                             "visible": true,
-                            "add" : "0",
-                            "edit" : {
+                            "add": "0",
+                            "edit": {
                                 "type": "Select",
-                                "width" : "200px",
-                                "options" : [
-                                ] 
+                                "width": "200px",
+                                "options": []
                             }
-
                         },
                         {
                             "caption": "Variablenverknüpfung",
@@ -481,9 +712,8 @@
                                         "width": "300px",
                                         "add": 0,
                                         "edit": {
-                                            "type": "SelectObject", 
-                                            "options" : [
-                                            ]
+                                            "type": "SelectObject",
+                                            "options": []
                                         }
                                     },
                                     {
@@ -493,9 +723,15 @@
                                         "add": 1,
                                         "edit": {
                                             "type": "Select",
-                                            "options" : [
-                                                {"caption" : "Variablenname", "value" : 0},
-                                                {"caption" : "Variableninhalt", "value" : 1}
+                                            "options": [
+                                                {
+                                                    "caption": "Variablenname",
+                                                    "value": 0
+                                                },
+                                                {
+                                                    "caption": "Variableninhalt",
+                                                    "value": 1
+                                                }
                                             ],
                                             "onChange": "IPS_RequestAction($id,'toggleFormatted_active',$valuetype);"
                                         }
@@ -507,8 +743,8 @@
                                         "add": "1",
                                         "edit": {
                                             "type": "NumberSpinner",
-                                            "value" : 1,
-                                            "digits" : 2
+                                            "value": 1,
+                                            "digits": 2
                                         }
                                     },
                                     {
@@ -533,10 +769,10 @@
                                         "caption": "Länge",
                                         "name": "valueLength",
                                         "width": "100px",
-                                        "add" : "",
+                                        "add": "",
                                         "edit": {
                                             "type": "ValidationTextBox",
-                                            "validate": "^[0-9]*$" 
+                                            "validate": "^[0-9]*$"
                                         }
                                     },
                                     {
@@ -545,12 +781,10 @@
                                         "width": "300px",
                                         "add": 0,
                                         "edit": {
-                                            "type": "NumberSpinner", 
-                                            "options" : [
-                                            ]
+                                            "type": "NumberSpinner",
+                                            "options": []
                                         }
                                     }
-
                                 ]
                             }
                         }
@@ -569,10 +803,10 @@
                             "name": "panelActionPage",
                             "width": "250px",
                             "visible": true,
-                            "add" : "0",
-                            "edit" : {
+                            "add": "0",
+                            "edit": {
                                 "type": "ValidationTextBox",
-                                "width" : "250px",
+                                "width": "250px",
                                 "minimum": 0,
                                 "maximum": 60000
                             }
@@ -582,10 +816,10 @@
                             "name": "panelActionComment",
                             "width": "250px",
                             "visible": true,
-                            "add" : "",
-                            "edit" : {
+                            "add": "",
+                            "edit": {
                                 "type": "ValidationTextBox",
-                                "width" : "250px"
+                                "width": "250px"
                             }
                         },
                         {
@@ -601,8 +835,8 @@
                                 "rowCount": 4,
                                 "add": true,
                                 "delete": true,
-                                "onEdit" : "IPS_RequestAction($id,'PanelActionReset','edit');",
-                                "onAdd" :  "IPS_RequestAction($id,'PanelActionReset','add');",
+                                "onEdit": "IPS_RequestAction($id,'PanelActionReset','edit');",
+                                "onAdd": "IPS_RequestAction($id,'PanelActionReset','add');",
                                 "columns": [
                                     {
                                         "caption": "result (Angabe aus filter und result muß eindeutig sein)",
@@ -611,7 +845,7 @@
                                         "add": "",
                                         "edit": {
                                             "type": "ValidationTextBox",
-                                            "width" : "300px",
+                                            "width": "300px",
                                             "validate": "^.+$"
                                         }
                                     },
@@ -631,12 +865,27 @@
                                         "add": "RequestAction",
                                         "edit": {
                                             "type": "Select",
-                                            "options" : [
-                                                {"caption" : "RequestAction", "value" : 0},
-                                                {"caption" : "start script", "value" : 1},
-                                                {"caption" : "start script with parameter", "value" : 3},
-                                                {"caption" : "SetValue", "value" : 4},
-                                                {"caption" : "call Page", "value" : 2}
+                                            "options": [
+                                                {
+                                                    "caption": "RequestAction",
+                                                    "value": 0
+                                                },
+                                                {
+                                                    "caption": "start script",
+                                                    "value": 1
+                                                },
+                                                {
+                                                    "caption": "start script with parameter",
+                                                    "value": 3
+                                                },
+                                                {
+                                                    "caption": "SetValue",
+                                                    "value": 4
+                                                },
+                                                {
+                                                    "caption": "call Page",
+                                                    "value": 2
+                                                }
                                             ]
                                         }
                                     },
@@ -647,8 +896,8 @@
                                         "add": "",
                                         "edit": {
                                             "type": "NumberSpinner",
-                                            "maximum" : 60000, 
-                                            "minimum" : 0
+                                            "maximum": 60000,
+                                            "minimum": 0
                                         }
                                     },
                                     {
@@ -658,7 +907,7 @@
                                         "add": false,
                                         "edit": {
                                             "type": "CheckBox",
-                                            "onChange" : "IPS_RequestAction($id,'PanelActionToggle',$toggle);"
+                                            "onChange": "IPS_RequestAction($id,'PanelActionToggle',$toggle);"
                                         }
                                     },
                                     {
@@ -678,8 +927,8 @@
                                         "add": "1",
                                         "edit": {
                                             "type": "NumberSpinner",
-                                            "value" : 1,
-                                            "digits" : 2
+                                            "value": 1,
+                                            "digits": 2
                                         }
                                     },
                                     {
@@ -699,39 +948,36 @@
             ]
         },
         {
-            "type" :"CheckBox", 
-            "name": "PropertyVariableDebug", 
-            "caption": "Debug" 
+            "type": "CheckBox",
+            "name": "PropertyVariableDebug",
+            "caption": "Debug"
         }
     ],
     "actions": [
         {
             "type": "ExpansionPanel",
             "caption": "ListHelper",
-            "items": [   
-                    {
-                        "type": "List",
-                        "name": "showPageColumns",
-                        "caption": "Spalten",
-                        "rowCount": "1",
-                        "columns": [
-                        ]
-                    },
-                    {
-                        "type" : "Select", 
-                        "name" : "showPage",
-                        "width" : "75px", 
-                        "caption" : "Seite",
-                        "options" : [
-                        ],
-                        "onChange" : "IPS_RequestAction($id,'LoadEntry',$showPage);"
-                    }
-    
+            "items": [
+                {
+                    "type": "List",
+                    "name": "showPageColumns",
+                    "caption": "Spalten",
+                    "rowCount": "1",
+                    "columns": []
+                },
+                {
+                    "type": "Select",
+                    "name": "showPage",
+                    "width": "75px",
+                    "caption": "Seite",
+                    "options": [],
+                    "onChange": "IPS_RequestAction($id,'LoadEntry',$showPage);"
+                }
             ]
         },
         {
-            "type" : "RowLayout",
-            "items" : [
+            "type": "RowLayout",
+            "items": [
                 {
                     "type": "Button",
                     "caption": "Send1",
@@ -740,36 +986,36 @@
                 {
                     "name": "Text",
                     "type": "ValidationTextBox",
-                    "width": "1200px", 
+                    "width": "1200px",
                     "caption": "Text"
                 }
             ]
         },
         {
-            "type" : "RowLayout",
-            "items" : [
+            "type": "RowLayout",
+            "items": [
                 {
                     "type": "Button",
                     "caption": "Send",
-                    "onClick":"IPS_RequestAction($id, 'Send', $Text2);"
+                    "onClick": "IPS_RequestAction($id, 'Send', $Text2);"
                 },
                 {
                     "name": "Text2",
                     "type": "ValidationTextBox",
-                    "width": "1200px", 
+                    "width": "1200px",
                     "caption": "Text"
                 }
             ]
         },
         {
-            "type" : "RowLayout",
-            "items" : [
+            "type": "RowLayout",
+            "items": [
                 {
                     "type": "Button",
                     "caption": "Save",
-                    "name" : "save",
+                    "name": "save",
                     "onClick": "IPS_RequestAction($id, 'Save','');",
-                    "enabled" : true
+                    "enabled": true
                 },
                 {
                     "type": "Button",
@@ -779,21 +1025,19 @@
                 {
                     "type": "Select",
                     "name": "loadConfig",
-                    "caption" : "Lade Konfiguration",
+                    "caption": "Lade Konfiguration",
                     "width": "300px",
-                        "options" : [
-                        ]
+                    "options": []
                 }
             ]
         },
         {
-            "type":"CheckBox",
-            "name":"activated",
-            "caption":"activated",
-            "value":false,
-            "onChange" : "IPS_RequestAction($id,'SwapModuleStatus','');"
+            "type": "CheckBox",
+            "name": "activated",
+            "caption": "activated",
+            "value": false,
+            "onChange": "IPS_RequestAction($id,'SwapModuleStatus','');"
         }
-
-],
+    ],
     "status": []
 }
