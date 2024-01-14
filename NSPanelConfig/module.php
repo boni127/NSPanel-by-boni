@@ -15,6 +15,8 @@
 ###
 ## Zeile 244 sendMqtt_CustomSend prüfen, wird ohne array aufgerufen
 
+## acept swips wird ausgewertet, obwohl swipes deaktiviert ist. Bemerkt am US Panel
+
 
 declare(strict_types=1);
 require_once __DIR__ . '/icon-mapping.php';
@@ -29,7 +31,6 @@ require_once __DIR__ . '/icon-mapping.php';
 		const UP   = 4;
 		const ScreenSaver1 = 'pageType~screensaver';
 		const ScreenSaver2 = 'pageType~screensaver2';
-
 
 		public function Create()
 		{
@@ -59,6 +60,7 @@ require_once __DIR__ . '/icon-mapping.php';
 			$this->RegisterPropertyBoolean('sc_notifyActive',0);
 			$this->RegisterPropertyInteger('sc_notifyHeading',0);
 			$this->RegisterPropertyInteger('sc_notifyText',0);
+			$this->RegisterAttributeString('sc_notifyWarn','[]');  # String für Warnmeldung auf dem Display
 			$this->RegisterPropertyBoolean('sc_weatherActive',0);
 			$this->RegisterPropertyString('sc_weatherforecast','{}');
 			$this->RegisterPropertyString('sc_wc_assignIcons','{}');
@@ -105,6 +107,8 @@ require_once __DIR__ . '/icon-mapping.php';
 			//Never delete this line!
 			parent::Destroy();
 		}
+
+
 
 		public function ApplyChanges()
 		{
@@ -315,7 +319,7 @@ require_once __DIR__ . '/icon-mapping.php';
 
 			$current = $this->GetMessageList (); // Ist-Zustand RegisterMessage
 
-			$this->LogMessage('currently registered:'. implode('-',array_keys($current)),KL_NOTIFY);
+			$this->LogMessage('currently registered: '. implode(', ',array_keys($current)),KL_NOTIFY);
 
 		}
 
@@ -354,47 +358,67 @@ require_once __DIR__ . '/icon-mapping.php';
 	
 		}
 
+		function SetNotifyWarn(string $heading, string $text) {
+			$output=array();
+			if (!empty($heading)) array_push($output,$heading);
+			if (!empty($text)) array_push($output,$text);
+			$this->WriteAttributeString('sc_notifyWarn',json_encode($output));
+			$this->LogMessage('set notifyWarn to '. implode(' | ',$output),KL_NOTIFY );
+			$this->sendMqtt_CustomSend(array($this->generateNotifyString()));
+			$this->registerVariableToMessageSink(false);
+		}
+
 		private function registerVariableToMessageSink (bool $register ) {
 			# $register == true: RegisterMessage für alle auf der aktuellen Seite dargestellen Variablen durchführen  
 			# $register == false: UnregisterMeassge für alle in Attribute registerVariable vorgemerkten Varaiblen aufheben und Attribut registerVariable leeren
+			#                     Wenn sc_notifyActive nicht gesetzt ist 
 			$debug = $this->ReadPropertyBoolean("PropertyVariableDebug");
 			$target = json_decode($this->ReadAttributeString('registerVariable'),true); // Soll-Zustand  RegisterMessage
 			$current = $this->GetMessageList (); // Ist-Zustand RegisterMessage
 
+
+			$this->LogMessage('target:'.print_r($target,true),KL_NOTIFY);
+			$this->LogMessage('current:'.print_r($current,true),KL_NOTIFY);
+
 			# Object-Id's für die Heading und Notify-Zeile des Screensavers
 			# wenn register = false, dann ist der screensaver aktiv.
 			if (!$register) {
-				if ($this->ReadPropertyBoolean('sc_notifyActive')) { # Wenn der Screensaver  aktiv ist,  Var für notify registrieren
+				if ($this->ReadPropertyBoolean('sc_notifyActive') && sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true)) == 0) { # Wenn der Screensaver aktiv ist,  Var für notify registrieren, wenn kein notifyWarn gesetzt ist
+$this->LogMessage('DBG13',KL_NOTIFY);
 					if ($this->ReadPropertyInteger('sc_notifyHeading') > 1) {
 						$target[$this->ReadPropertyInteger('sc_notifyHeading')]=0;
+						#array_push($target,$this->ReadPropertyInteger('sc_notifyHeading'));
 					}
 					if ($this->ReadPropertyInteger('sc_notifyText') > 1) {
 						$target[$this->ReadPropertyInteger('sc_notifyText')]=0;
+						#array_push($target,$this->ReadPropertyInteger('sc_notifyText'));
 					}
 				}
 			}
+			$this->LogMessage('target after:'.print_r($target,true),KL_NOTIFY);
+
 			if ($debug) {
-				$this->LogMessage('object-id to register:'. implode('-',array_keys($target)),KL_NOTIFY);
-				$this->LogMessage('currently registered:'. implode('-',array_keys($current)),KL_NOTIFY);
+				$this->LogMessage('object-id to register:'. implode(', ',array_keys($target)),KL_NOTIFY);
+				$this->LogMessage('currently registered: '. implode(', ',array_keys($current)),KL_NOTIFY);
 			}
 
 			if ($register) { // RegisterMessage anpassen
 				foreach(array_diff_key($target,$current) as $key => $element){
 					$this->RegisterMessage($key, VM_UPDATE);
-					if ($debug) $this->LogMessage('var to observe: '.$key,KL_NOTIFY);
+					if ($debug) $this->LogMessage('  var to observe: '.$key,KL_NOTIFY);
 				}
 				foreach(array_diff_key($current,$target) as $key => $element){
 					$this->UnregisterMessage($key, VM_UPDATE);
-					if ($debug) $this->LogMessage('remove from observe: '.$key,KL_NOTIFY);
+					if ($debug) $this->LogMessage('  remove from observe: '.$key,KL_NOTIFY);
 				}
 			} else {
 				foreach($current as $key => $element){
 					$this->UnregisterMessage($key, VM_UPDATE);
-					if ($debug) $this->LogMessage('remove from observe: '.$key,KL_NOTIFY);
+					if ($debug) $this->LogMessage('  remove from observe: '.$key,KL_NOTIFY);
 				}
 				foreach(array_diff_key($target,$current) as $key => $element){
 					$this->RegisterMessage($key, VM_UPDATE);
-					if ($debug) $this->LogMessage('var to observe: '.$key,KL_NOTIFY);
+					if ($debug) $this->LogMessage('  var to observe: '.$key,KL_NOTIFY);
 				}
 				$this->WriteAttributeString('registerVariable',json_encode(array()));
 			}
@@ -449,7 +473,7 @@ require_once __DIR__ . '/icon-mapping.php';
 					$this->LogMessage('Dimmode after screensaver disabled or time = 0 sec', KL_NOTIFY);
 				}
 			} else {
-				$this->LogMessage('alternativ DimMode is set to '.$this->ReadAttributeInteger('sc_dimModeState').  ', DimMode after Screensaver is disabled', KL_NOTIFY);
+				$this->LogMessage('alternative DimMode is set to '.$this->ReadAttributeInteger('sc_dimModeState').  ', DimMode after Screensaver is disabled', KL_NOTIFY);
 			}
 		}
 
@@ -499,25 +523,25 @@ require_once __DIR__ . '/icon-mapping.php';
 				case "LoadEntry":
 					$this->LoadEntry("$Value");
 					break;
-				case "toggleSc_active";
+				case "toggleSc_active":
 					$this->toggleSc_active($Value);
 					break;
-				case "toggleSc_multiClick";
+				case "toggleSc_multiClick":
 					$this->toggleSc_multiClick($Value);
 					break;
-				case "toggleSc_notifyActive";
+				case "toggleSc_notifyActive":
 					$this->toggleSc_notifyActive($Value);
 					break;
-				case "toggleDefaultPageActive";
+				case "toggleDefaultPageActive":
 					$this->toggleDefaultPageActive($Value);
 					break;
-				case "toggleSc_powersafeTime";
+				case "toggleSc_powersafeTime":
 					$this->toggleSc_powersafeTime($Value);
 					break;
-				case "toggleFormatted_active";
+				case "toggleFormatted_active":
 					$this->toggleFormatted_active($Value);
 					break;
-				case "deletePagePanelPageConf";
+				case "deletePagePanelPageConf":
 					$this->deletePagePanelPageConf();
 				case "SwapModuleStatus":
 					$this->SwapModuleStatus();
@@ -532,7 +556,6 @@ require_once __DIR__ . '/icon-mapping.php';
 					if (!empty($this->ReadPropertyString('sc_powersafeCmd'))) {
 						$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_powersafeCmd')));
 					}
-		
 			}  
 		}
 
@@ -619,14 +642,25 @@ require_once __DIR__ . '/icon-mapping.php';
 		private function genScreenSaverCmd ($searchKey) {
 			$start=microtime(true);
 
+			# Liste mit darstellbaren Icons zusammenstellen
 			if ($this->ReadPropertyInteger('sc') == 1 ) {
 				$maxNspEntries=6;
 				$lineOne=array(2,3,4,5);
 				$lineTwo=array(1,2,3,4,5,6);
+				if ($this->ReadPropertyBoolean('sc_notifyActive')) {
+					$showIcon=array();
+				} else {
+					$showIcon=array(1,2,3,4,5,6);
+				}
 			} else {
 				$maxNspEntries=15;
 				$lineOne=array(5,6,7,8,9,10);
 				$lineTwo=array(1,2,3,4,5,6,7,8,9,10);
+				if ($this->ReadPropertyBoolean('sc_notifyActive')) {
+					$showIcon=array(1,2,3,4,11,12,13,14,15);
+				} else {
+					$showIcon=array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+				}
 			}
 
 			# load icons
@@ -669,7 +703,7 @@ require_once __DIR__ . '/icon-mapping.php';
 			}
 		
 			for ($i=1; $i<=$maxNspEntries; $i++) {
-				if (array_key_exists($i,$default)) {
+				if (in_array($i,$showIcon) && array_key_exists($i,$default)) {
 					$indexKey=$default[$i];
 					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("create icon postion $i index $indexKey",KL_NOTIFY);
 					# type intNameEntity: ignored
@@ -881,8 +915,18 @@ require_once __DIR__ . '/icon-mapping.php';
 		}
 
 		private function generateNotifyString() {
-			$heading=($this->ReadPropertyInteger('sc_notifyHeading') > 1) ? GetValueFormatted($this->ReadPropertyInteger('sc_notifyHeading')) : '';
-			$notify=($this->ReadPropertyInteger('sc_notifyText') > 1) ? GetValueFormatted($this->ReadPropertyInteger('sc_notifyText')) : '';
+			$heading='';
+			$notify='';
+			$this->LogMessage('DBG:generateNotifyString',KL_NOTIFY);
+			$notifyWarnMsg=json_decode($this->ReadAttributeString('sc_notifyWarn'),true);
+
+ 			if (sizeof($notifyWarnMsg)==0 && $this->ReadPropertyBoolean('sc_notifyActive')) {
+				$heading=($this->ReadPropertyInteger('sc_notifyHeading') > 1) ? GetValueFormatted($this->ReadPropertyInteger('sc_notifyHeading')) : '';
+				$notify=($this->ReadPropertyInteger('sc_notifyText') > 1) ? GetValueFormatted($this->ReadPropertyInteger('sc_notifyText')) : '';
+			} else {
+				if (array_key_exists(0,$notifyWarnMsg)) $heading = $notifyWarnMsg[0]; 
+				if (array_key_exists(1,$notifyWarnMsg)) $notify = $notifyWarnMsg[1]; 
+			}
 			return 'notify~'.$heading.'~'.$notify;
 		}
 
@@ -1445,13 +1489,18 @@ require_once __DIR__ . '/icon-mapping.php';
 									$this->sendMqtt_CustomSend(array(self::ScreenSaver2));
 								}
 								if (!empty($this->ReadAttributeString('sc_color_565'))) {
-									$this->sendMqtt_CustomSend(array($this->ReadAttributeString('sc_color_565')));  #DB COLOR
+									$this->sendMqtt_CustomSend(array($this->ReadAttributeString('sc_color_565'))); 
 								}
 								$this->WriteAttributeBoolean('sc_state_active',1);
 								if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('state sc: active',KL_NOTIFY);
 								$this->RefreshDate(true);
-								if ($this->ReadPropertyBoolean('sc_notifyActive') && ($this->ReadPropertyInteger('sc_notifyHeading')>1 || $this->ReadPropertyInteger('sc_notifyText')>1)) {
+								if ($this->ReadPropertyBoolean('sc_notifyActive')) {
 									$this->sendMqtt_CustomSend(array($this->generateNotifyString()));
+									// if (sizeof(json_decode($this->ReadPropertyInteger('sc_notifyWarn'),true)>0)) {
+									// 	$this->sendMqtt_CustomSend(array($this->generateNotifyString(self::Notify)));
+									// } elseif ($this->ReadPropertyInteger('sc_notifyHeading')>1 || $this->ReadPropertyInteger('sc_notifyText')>1) {
+									// 	$this->sendMqtt_CustomSend(array($this->generateNotifyString(self::NotifyWarn)));
+									// }
 								}
 								$this->registerVariableToMessageSink(false); # RegisterMessage für Var der aktuellen Seite aufheben   
 							}
@@ -1643,6 +1692,14 @@ require_once __DIR__ . '/icon-mapping.php';
 								}
 								if ($elementLayer3 === 'sc_weatherKey') {
 									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['value'] = $this->ReadAttributeString('sc_weatherKey');
+								}
+								if ($elementLayer3 === 'notifyWarnMsg') {
+									$notifyWarnMsg = json_decode($this->ReadAttributeString('sc_notifyWarn'),true);
+									if (array_key_exists(0,$notifyWarnMsg)) $notifyWarnMsg[0] = substr($notifyWarnMsg[0],0,30); 
+									if (array_key_exists(1,$notifyWarnMsg)) $notifyWarnMsg[1] = substr($notifyWarnMsg[1],0,30); 
+
+									
+									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['value'] = implode ('|',$notifyWarnMsg);
 								}
 
 

@@ -42,6 +42,13 @@
                     "caption": "data-Version",
                     "width": "50px",
                     "enabled": false
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "notifywarnmsg",
+                    "caption": "notifyWarnMsg",
+                    "width": "250px",
+                    "enabled": false
                 }
             ]
         },
