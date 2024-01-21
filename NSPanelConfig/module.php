@@ -45,6 +45,7 @@ require_once __DIR__ . '/icon-mapping.php';
 			$this->RegisterPropertyString('sc_dimMode_cmd1','dimmode~0~100'); # alternativer DimMode 1
 			$this->RegisterPropertyString('sc_dimMode_cmd2','dimmode~20~100'); # alternativer DimMode 2
 			$this->RegisterPropertyString('sc_dimMode_cmd3','dimmode~50~100'); # alternativer DimMode 3
+			$this->RegisterPropertyString('sc_dimModeWarn','dimmode~80~100'); # alternativer DimMode NotifyWarn
 			$this->RegisterAttributeInteger('sc_dimModeState',0); # aktiver DimMode 
 			$this->RegisterAttributeString('sc_weatherKey',''); # Filterkey für Icons in Wetteranzeige
 			$this->RegisterPropertyString('sc_color',''); # Farbschemata
@@ -364,8 +365,17 @@ require_once __DIR__ . '/icon-mapping.php';
 			if (!empty($text)) array_push($output,$text);
 			$this->WriteAttributeString('sc_notifyWarn',json_encode($output));
 			$this->LogMessage('set notifyWarn to '. implode(' | ',$output),KL_NOTIFY );
-			$this->sendMqtt_CustomSend(array($this->generateNotifyString()));
-			$this->registerVariableToMessageSink(false);
+
+			if (sizeof($output)==0) {
+				$this->SetDimMode($this->ReadAttributeInteger('sc_dimModeState'));
+			} else {
+				$this->SetDimMode(-1);
+			}
+
+			if ($this->ReadAttributeBoolean('sc_state_active')) {
+				$this->sendMqtt_CustomSend(array($this->generateNotifyString()));
+				$this->registerVariableToMessageSink(false);
+			}
 		}
 
 		private function registerVariableToMessageSink (bool $register ) {
@@ -384,7 +394,6 @@ require_once __DIR__ . '/icon-mapping.php';
 			# wenn register = false, dann ist der screensaver aktiv.
 			if (!$register) {
 				if ($this->ReadPropertyBoolean('sc_notifyActive') && sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true)) == 0) { # Wenn der Screensaver aktiv ist,  Var für notify registrieren, wenn kein notifyWarn gesetzt ist
-$this->LogMessage('DBG13',KL_NOTIFY);
 					if ($this->ReadPropertyInteger('sc_notifyHeading') > 1) {
 						$target[$this->ReadPropertyInteger('sc_notifyHeading')]=0;
 						#array_push($target,$this->ReadPropertyInteger('sc_notifyHeading'));
@@ -426,13 +435,19 @@ $this->LogMessage('DBG13',KL_NOTIFY);
 
 		public function SetDimMode(int $Mode) {
 			$this->LogMessage("set dimMode to ".$Mode,KL_NOTIFY);
-			$this->WriteAttributeInteger('sc_dimModeState',$Mode); # DimMode sichern
+			if ($Mode >= 0) {  ## Mode -1: NotifyWarn wird angezeigt, diesen Mode nicht speichern
+				$this->WriteAttributeInteger('sc_dimModeState',$Mode); # DimMode sichern
+			}
 			if ($Mode>0) $this->SetTimerInterval('sc_powersafe',0);  # Timer dimMode after Screensaver abschalten
 			if ($Mode==0) $this->ActivateDimModeTimer(); # DimMode Timer wieder aktivieren 
 
 			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("save dimModeState: $Mode",KL_NOTIFY);
 			switch ($Mode) {
+			case -1:   # Mode -1 ist fpr due Helligkeit bei NotifyWarn, dieser Status wird nicht gespeichert
+				$this->Send($this->ReadPropertyString('sc_dimModeWarn'));
+				break;
 			case 0:
+				$this->LogMessage('case0',KL_MESSAGE);
 				$this->Send($this->ReadPropertyString('sc_dimMode'));
 				break;
 			case 1:
@@ -462,10 +477,12 @@ $this->LogMessage('DBG13',KL_NOTIFY);
 		}
 		
 		public function ActivateDimModeTimer(){
+
 			if ($this->ReadAttributeInteger('sc_dimModeState') == 0) { 
 				if ($this->ReadPropertyBoolean('sc_powersafeTime_active') && ($this->ReadPropertyInteger('sc_powersafeTime') > 0 )) {
 					$this->LogMessage('start DimModeTimer: '.$this->ReadPropertyInteger('sc_powersafeTime').' sec.',KL_NOTIFY);
 					$this->SetTimerInterval('sc_powersafe',1000*$this->ReadPropertyInteger('sc_powersafeTime'));
+					$this->LogMessage('DBGTimer'.(1000*$this->ReadPropertyInteger('sc_powersafeTime')),KL_NOTIFY);
 					if (!empty($this->ReadPropertyString('sc_dimMode'))) {
 						$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode')));
 					}
@@ -647,7 +664,8 @@ $this->LogMessage('DBG13',KL_NOTIFY);
 				$maxNspEntries=6;
 				$lineOne=array(2,3,4,5);
 				$lineTwo=array(1,2,3,4,5,6);
-				if ($this->ReadPropertyBoolean('sc_notifyActive')) {
+				$this->LogMessage('DBG'.$this->ReadAttributeString('sc_notifyWarn'),KL_NOTIFY);
+				if ($this->ReadPropertyBoolean('sc_notifyActive') || sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true)) > 0) {
 					$showIcon=array();
 				} else {
 					$showIcon=array(1,2,3,4,5,6);
@@ -656,7 +674,7 @@ $this->LogMessage('DBG13',KL_NOTIFY);
 				$maxNspEntries=15;
 				$lineOne=array(5,6,7,8,9,10);
 				$lineTwo=array(1,2,3,4,5,6,7,8,9,10);
-				if ($this->ReadPropertyBoolean('sc_notifyActive')) {
+				if ($this->ReadPropertyBoolean('sc_notifyActive') || sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true)) >0 ) {
 					$showIcon=array(1,2,3,4,11,12,13,14,15);
 				} else {
 					$showIcon=array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
@@ -1494,7 +1512,8 @@ $this->LogMessage('DBG13',KL_NOTIFY);
 								$this->WriteAttributeBoolean('sc_state_active',1);
 								if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage('state sc: active',KL_NOTIFY);
 								$this->RefreshDate(true);
-								if ($this->ReadPropertyBoolean('sc_notifyActive')) {
+								# notifyActive gesetzt oder WarnMsg aktiv
+								if ($this->ReadPropertyBoolean('sc_notifyActive') || (sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true))>0)) {
 									$this->sendMqtt_CustomSend(array($this->generateNotifyString()));
 									// if (sizeof(json_decode($this->ReadPropertyInteger('sc_notifyWarn'),true)>0)) {
 									// 	$this->sendMqtt_CustomSend(array($this->generateNotifyString(self::Notify)));
@@ -1525,19 +1544,20 @@ $this->LogMessage('DBG13',KL_NOTIFY);
 								}
 								$this->RefreshDate(false);
 
-								$this->ActivateDimModeTimer(); # Timer für Display gesetzt? Starte im PowerSafe Mode
+								#$this->ActivateDimModeTimer(); # Timer für Display gesetzt? Starte im PowerSafe Mode
 
 								$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadAttributeInteger('currentPage')));
 								$this->registerVariableToMessageSink(true); # RegisterMessage für Var der aktuellen Seite durchführen   
 								$this->WriteAttributeBoolean('sc_state_active',0);
 							} elseif (preg_match('/screensaver,(swipe(Left|Right|Up|Down))/',$gotResultBp,$matches)) { #screensaver swipe
+								$this->WriteAttributeBoolean('sc_state_active',0);
+								#$this->ActivateDimModeTimer(); # Timer für Display gesetzt? Starte im PowerSafe Mode
 								if ($this->ReadPropertyBoolean('sc_acceptSwipes')) {
+									$this->doPanelAction(array('','screensaver',$matches[1],''));
+								} else {
 									$this->RefreshDate(false);
 									$this->sendMqtt_CustomSend($this->Value2Page(self::GO,$this->ReadAttributeInteger('currentPage')));
 									$this->registerVariableToMessageSink(true); # RegisterMessage für Var der aktuellen Seite durchführen   
-									$this->WriteAttributeBoolean('sc_state_active',0);
-								} else {
-									$this->doPanelAction(array('','screensaver',$matches[1],''));
 								}
 							} elseif (preg_match('/popup.*,bExit/', $gotResult)) { # popup.*,bExit
 								$this->sendMqtt_CustomSend($this->Value2Page(self::UP,$this->ReadAttributeInteger('currentPage')));
@@ -1573,6 +1593,8 @@ $this->LogMessage('DBG13',KL_NOTIFY);
 									$this->doPanelAction(array('',intval($result[1]),$result[2],$result[3]));
 								}
 							}
+							$this->ActivateDimModeTimer(); # Timer für Display gesetzt? Starte im PowerSafe Mode
+
 						} 
 
 					case 'stat/' . $this->ReadPropertyString('topic') . '/RESULT': 	

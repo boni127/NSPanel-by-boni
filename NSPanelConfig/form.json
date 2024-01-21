@@ -110,9 +110,19 @@
                     ]
                 },
                 {
-                    "type": "ValidationTextBox",
-                    "name": "sc_dimMode",
-                    "caption": "Screensaver DimMode 0"
+                    "type": "RowLayout",
+                    "items": [
+                    {
+                        "type": "ValidationTextBox",
+                        "name": "sc_dimMode",
+                        "caption": "Screensaver DimMode 0"
+                    },
+                    {
+                        "type": "ValidationTextBox",
+                        "name": "sc_dimModeWarn",
+                        "caption": "Screensaver DimMode W"
+                    }
+                   ]
                 },
                 {
                     "type": "ValidationTextBox",
@@ -987,7 +997,7 @@
             "items": [
                 {
                     "type": "Button",
-                    "caption": "Send1",
+                    "caption": "Send",
                     "onClick": "IPS_RequestAction($id, 'Send', $Text);"
                 },
                 {
