@@ -16,6 +16,11 @@
 ## Zeile 244 sendMqtt_CustomSend prüfen, wird ohne array aufgerufen
 
 ## acept swips wird ausgewertet, obwohl swipes deaktiviert ist. Bemerkt am US Panel
+## lässt sich bisher nicht nachvollziehen
+
+## Todo
+## Aufruf der NotifyWarn über IPS_RequestAction geht nicht.
+
 
 
 declare(strict_types=1);
@@ -61,7 +66,11 @@ require_once __DIR__ . '/icon-mapping.php';
 			$this->RegisterPropertyBoolean('sc_notifyActive',0);
 			$this->RegisterPropertyInteger('sc_notifyHeading',0);
 			$this->RegisterPropertyInteger('sc_notifyText',0);
+			$this->RegisterPropertyInteger('sc_notifyHeadingColor',16777215); # Farbe Notify Heading Zeile
+			$this->RegisterPropertyInteger('sc_notifyTextColor',16777215); # Farbe Notify Text Zeile
 			$this->RegisterAttributeString('sc_notifyWarn','[]');  # String für Warnmeldung auf dem Display
+			$this->RegisterAttributeString('sc_notifyColor_565','');
+			$this->RegisterAttributeString('sc_notifyWarnColor_565','');
 			$this->RegisterPropertyBoolean('sc_weatherActive',0);
 			$this->RegisterPropertyString('sc_weatherforecast','{}');
 			$this->RegisterPropertyString('sc_wc_assignIcons','{}');
@@ -277,6 +286,8 @@ require_once __DIR__ . '/icon-mapping.php';
 				  
 				}
 			}
+			# Farben für Notify setzen
+			$this->WriteAttributeString('sc_notifyColor_565',$this->convertRGB888to565($this->ReadPropertyInteger('sc_notifyHeadingColor')).'~'.$this->convertRGB888to565($this->ReadPropertyInteger('sc_notifyTextColor')));
 		}
 
 
@@ -359,11 +370,12 @@ require_once __DIR__ . '/icon-mapping.php';
 	
 		}
 
-		function SetNotifyWarn(string $heading, string $text) {
+		function SetNotifyWarn(string $heading, string $text, int $headingColor=123, int $textColor) {
 			$output=array();
 			if (!empty($heading)) array_push($output,$heading);
 			if (!empty($text)) array_push($output,$text);
 			$this->WriteAttributeString('sc_notifyWarn',json_encode($output));
+			$this->WriteAttributeString('sc_notifyWarnColor_565',$this->convertRGB888to565($headingColor).'~'.$this->convertRGB565to888($textColor));
 			$this->LogMessage('set notifyWarn to '. implode(' | ',$output),KL_NOTIFY );
 
 			if (sizeof($output)==0) {
@@ -437,57 +449,66 @@ require_once __DIR__ . '/icon-mapping.php';
 			$this->LogMessage("set dimMode to ".$Mode,KL_NOTIFY);
 			if ($Mode >= 0) {  ## Mode -1: NotifyWarn wird angezeigt, diesen Mode nicht speichern
 				$this->WriteAttributeInteger('sc_dimModeState',$Mode); # DimMode sichern
+				if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("save dimModeState: $Mode",KL_NOTIFY);
 			}
+
 			if ($Mode>0) $this->SetTimerInterval('sc_powersafe',0);  # Timer dimMode after Screensaver abschalten
 			if ($Mode==0) $this->ActivateDimModeTimer(); # DimMode Timer wieder aktivieren 
 
-			if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("save dimModeState: $Mode",KL_NOTIFY);
-			switch ($Mode) {
-			case -1:   # Mode -1 ist fpr due Helligkeit bei NotifyWarn, dieser Status wird nicht gespeichert
-				$this->Send($this->ReadPropertyString('sc_dimModeWarn'));
-				break;
-			case 0:
-				$this->LogMessage('case0',KL_MESSAGE);
-				$this->Send($this->ReadPropertyString('sc_dimMode'));
-				break;
-			case 1:
-				if (empty($this->ReadPropertyString('sc_dimMode_cmd1'))) {
-					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
-				} else {
-					$this->Send($this->ReadPropertyString('sc_dimMode_cmd1'));
+			if ($Mode < 0 || sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true)) == 0) {
+				switch ($Mode) {
+				case -1:   # Mode -1 ist für due Helligkeit bei NotifyWarn, dieser Status wird nicht gespeichert
+					$this->Send($this->ReadPropertyString('sc_dimModeWarn'));
+					break;
+				case 0:
+					$this->LogMessage('case0',KL_MESSAGE);
+					$this->Send($this->ReadPropertyString('sc_dimMode'));
+					break;
+				case 1:
+					if (empty($this->ReadPropertyString('sc_dimMode_cmd1'))) {
+						$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
+					} else {
+						$this->Send($this->ReadPropertyString('sc_dimMode_cmd1'));
+					}
+					break;
+				case 2:
+					if (empty($this->ReadPropertyString('sc_dimMode_cmd2'))) {
+						$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
+					} else {
+						$this->Send($this->ReadPropertyString('sc_dimMode_cmd2'));
+					}
+					break;
+				case 3:
+					if (empty($this->ReadPropertyString('sc_dimMode_cmd3'))) {
+						$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
+					} else {
+						$this->Send($this->ReadPropertyString('sc_dimMode_cmd3'));
+					}
+					break;
+				default:
+					$this->LogMessage('unkown dimMode : '.$Mode,KL_ERROR);
 				}
-				break;
-			case 2:
-				if (empty($this->ReadPropertyString('sc_dimMode_cmd2'))) {
-					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
-				} else {
-					$this->Send($this->ReadPropertyString('sc_dimMode_cmd2'));
-				}
-				break;
-			case 3:
-				if (empty($this->ReadPropertyString('sc_dimMode_cmd3'))) {
-					$this->LogMessage('no dimMode given, for cmd'.$Mode,KL_ERROR);
-				} else {
-					$this->Send($this->ReadPropertyString('sc_dimMode_cmd3'));
-				}
-				break;
-			default:
-				$this->LogMessage('unkown dimMode : '.$Mode,KL_ERROR);
+			} else {
+				$this->LogMessage('NotifyWarn is active, ignore switch to another dimmode',KL_NOTIFY);
 			}
 		}
 		
 		public function ActivateDimModeTimer(){
 
 			if ($this->ReadAttributeInteger('sc_dimModeState') == 0) { 
-				if ($this->ReadPropertyBoolean('sc_powersafeTime_active') && ($this->ReadPropertyInteger('sc_powersafeTime') > 0 )) {
-					$this->LogMessage('start DimModeTimer: '.$this->ReadPropertyInteger('sc_powersafeTime').' sec.',KL_NOTIFY);
-					$this->SetTimerInterval('sc_powersafe',1000*$this->ReadPropertyInteger('sc_powersafeTime'));
-					$this->LogMessage('DBGTimer'.(1000*$this->ReadPropertyInteger('sc_powersafeTime')),KL_NOTIFY);
-					if (!empty($this->ReadPropertyString('sc_dimMode'))) {
-						$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode')));
-					}
+				if (sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true))==0) { 
+					if ($this->ReadPropertyBoolean('sc_powersafeTime_active') && ($this->ReadPropertyInteger('sc_powersafeTime') > 0 )) {
+						$this->LogMessage('start DimModeTimer: '.$this->ReadPropertyInteger('sc_powersafeTime').' sec.',KL_NOTIFY);
+						$this->SetTimerInterval('sc_powersafe',1000*$this->ReadPropertyInteger('sc_powersafeTime'));
+						$this->LogMessage('DBGTimer'.(1000*$this->ReadPropertyInteger('sc_powersafeTime')),KL_NOTIFY);
+						if (!empty($this->ReadPropertyString('sc_dimMode'))) {
+							$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode')));
+						}
+					} else {
+						$this->LogMessage('Dimmode after screensaver disabled or time = 0 sec', KL_NOTIFY);
+					} 
 				} else {
-					$this->LogMessage('Dimmode after screensaver disabled or time = 0 sec', KL_NOTIFY);
+					$this->LogMessage('NotifyWarn is set, DimMode after Screensaver is disabled', KL_NOTIFY);
 				}
 			} else {
 				$this->LogMessage('alternative DimMode is set to '.$this->ReadAttributeInteger('sc_dimModeState').  ', DimMode after Screensaver is disabled', KL_NOTIFY);
@@ -521,6 +542,9 @@ require_once __DIR__ . '/icon-mapping.php';
 					break;
 				case "RefreshDate":
 					$this->RefreshDate($Value);
+					break;
+				case "SetNotifyWarn":
+					$this->LogMessage('SetNotifyWarn'.$Value,KL_NOTIFY);
 					break;
 				case "Send":
 					$this->Send($Value);
@@ -634,9 +658,13 @@ require_once __DIR__ . '/icon-mapping.php';
 			if ($active) {
 				$this->UpdateFormField("sc_notifyText", "enabled", true);
 				$this->UpdateFormField("sc_notifyHeading", "enabled", true);
+				$this->UpdateFormField("sc_notifyTextColor", "enabled", true);
+				$this->UpdateFormField("sc_notifyHeadingColor", "enabled", true);
 			} else {
 				$this->UpdateFormField("sc_notifyText", "enabled", false);
 				$this->UpdateFormField("sc_notifyHeading", "enabled", false);
+				$this->UpdateFormField("sc_notifyTextColor", "enabled", false);
+				$this->UpdateFormField("sc_notifyHeadingColor", "enabled", false);
 			}
 		}
 
@@ -935,17 +963,23 @@ require_once __DIR__ . '/icon-mapping.php';
 		private function generateNotifyString() {
 			$heading='';
 			$notify='';
+			$color='';
+
 			$this->LogMessage('DBG:generateNotifyString',KL_NOTIFY);
 			$notifyWarnMsg=json_decode($this->ReadAttributeString('sc_notifyWarn'),true);
 
  			if (sizeof($notifyWarnMsg)==0 && $this->ReadPropertyBoolean('sc_notifyActive')) {
 				$heading=($this->ReadPropertyInteger('sc_notifyHeading') > 1) ? GetValueFormatted($this->ReadPropertyInteger('sc_notifyHeading')) : '';
 				$notify=($this->ReadPropertyInteger('sc_notifyText') > 1) ? GetValueFormatted($this->ReadPropertyInteger('sc_notifyText')) : '';
+				$color=$this->ReadAttributeString('sc_notifyColor_565');
 			} else {
 				if (array_key_exists(0,$notifyWarnMsg)) $heading = $notifyWarnMsg[0]; 
 				if (array_key_exists(1,$notifyWarnMsg)) $notify = $notifyWarnMsg[1]; 
+				$color=$this->ReadAttributeString('sc_notifyWarnColor_565');
 			}
-			return 'notify~'.$heading.'~'.$notify;
+			$this->LogMessage('notify:'.$this->ReadPropertyInteger('sc_notifyHeadingColor'),KL_NOTIFY);
+			$this->LogMessage('color:'.$this->ReadAttributeString('sc_notifyColor_565'),KL_NOTIFY);
+			return 'notify~'.$heading.'~'.$notify.'~'.$color;
 		}
 
 		private function LoadEntry(string $page) {
@@ -1073,8 +1107,8 @@ require_once __DIR__ . '/icon-mapping.php';
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
 			# Wenn das array leer ist, kann keine Berechnung durchgeführt werden, unconfigured an das Panel senden
 			if (count($panelPage) == 0)	{
-				$this->sendMqtt_CustomSend(array('pageType~cardEntities','entityUpd~unconfigured~'));
-				return;
+				#$this->sendMqtt_CustomSend(array('pageType~cardEntities','entityUpd~unconfigured~'));
+				return array('pageType~cardEntities','entityUpd~unconfigured~');
 			}
 			# Array für die Seitenzahlen der aktuellen Ebene anlegen
 			$subPanelPage = array ();
@@ -1657,6 +1691,12 @@ require_once __DIR__ . '/icon-mapping.php';
 											if (!$this->ReadPropertyBoolean('sc_notifyActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
 										}
 										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_notifyText') {
+											if (!$this->ReadPropertyBoolean('sc_notifyActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
+										}
+										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_notifyHeadingColor') {
+											if (!$this->ReadPropertyBoolean('sc_notifyActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
+										}
+										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'sc_notifyTextColor') {
 											if (!$this->ReadPropertyBoolean('sc_notifyActive')) $Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['enabled'] = false;
 										}
 										if ($Form['elements'][$keyLayer0]['items'][$keyLayer2]['items'][$keyLayer4]['name'] === 'defaultPageTime') {

@@ -222,7 +222,19 @@
                             "type": "SelectObject",
                             "name": "sc_notifyText",
                             "caption": "text"
-                        }
+                        },
+                        {
+                        "caption": "heading",
+                        "name": "sc_notifyHeadingColor",
+                        "allowTransparent": false,
+                        "type": "SelectColor"
+                        },
+                        {
+                        "caption": "text",
+                        "name": "sc_notifyTextColor",
+                        "allowTransparent": false,
+                        "type": "SelectColor"
+                        }                        
                     ]
                 },
                 {
@@ -254,14 +266,15 @@
                                     }
                                 },
                                 {
-                                    "caption": "Icon-Farbe",
+                                    "caption": "Icon-Farbe2",
                                     "name": "iconColor",
                                     "width": "10%",
-                                    "enabled": true,
                                     "visible": false,
                                     "add": "",
                                     "edit": {
-                                        "type": "NumberSpinner"
+                                        "type": "NumberSpinner",
+                                        "enabled": false,
+                                        "visible": false
                                     }
                                 },
                                 {
