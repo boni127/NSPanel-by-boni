@@ -8,7 +8,7 @@ Dieses Modul bindet das Sonoff NSP-Panel (EU / US) mit der lovelace UI in Symcon
 2. [Voraussetzungen](#2-voraussetzungen)
 3. [Software-Installation](#3-software-installation)
 4. [Einrichten der Instanzen in IP-Symcon](#4-einrichten-der-instanzen-in-ip-symcon)
-5. [Statusvariablen und Profile](#5-statusvariablen-und-profile)
+5. [Funktionen](#5-funktionen)
 6. [WebFront](#6-webfront)
 7. [PHP-Befehlsreferenz](#7-php-befehlsreferenz)
 
@@ -326,12 +326,13 @@ Bspw. hier an Spalte 5 für den zurück-Button.
 
 `pageType~screensaver` 
 
-hinterlegt. Die Helligkeit des Screensavers wird über `screensaver DimMode 0` eingestellt:
+hinterlegt. Es kann zwischen 2 Screensaver Darstellungen gewechselt werden, `default` (5 Icons) und `alternativ` (15 Icons) Die Helligkeit des Screensavers wird über `screensaver DimMode 0` eingestellt:
 
 `dimmode~20~100`
 
 Der erste Wert `20` legt die Helligkeit bei aktiviertem Screensaver fest, der zweite Wert die Helligkeit, wenn der Saver nicht aktiv ist. `screensaver Timeout` legt die Zeit in Sekunden bis zum Starten des Screensavers fest.
 
+`call default page` legt fest welche Seite nach Ablauf der Zeit `time to wait` im Menü als Startseite festgelegt wird.
 
 
 
@@ -354,13 +355,26 @@ Der `DimMode after Screensaver Timeout` ist nur aktiv, wenn der DimMode via `DBN
 
 Über das Kommando `ActiveDimModeTimer` kann der Timer neu gestartet werden, beispielsweise um mittels Bewegungsmelder die Anzeige des NSPanel's wieder zu aktivieren
 
+`notify` legt den dargstellten Text im aktiven Screencaver fest, über die Farbwahl-Felder erfolgt die Definition der zu benutzenden Farbe.
+
+### Screensaver Farben
+In der Tabelle können Farbschemata für diverse Anzeigeelemente festgelegt werden. Der Aufruf eines Farbschemas erfolgt über die Funktion `DBNSP_SetColorSchema` unter Abgabe des Schema-Namens. Ein einmal gewähltes Farbschema wird gespeichert und bei Neustart des Panels wieder gesetzt.
+
+### Notify-Warn
+Über die Funktion DBNSP_SetNotifyWarn kann eine temporäre Warnmeldung im Screensaver angezeigt werden. Diese Warnmeldung überschreibt die über `notify` eingestellte Anzeige bis zur Rücknahme der Warnmeldung. Gleichzeitig wird der DimMode auf den Wert `Screensaver DimMode W` gesetzt. Somit kann erreicht werden, dass bei Ausgabe der Warnmeldung das Display nicht dunkel geschaltet wird.
+
+### Statuszeile 
+Neben dem MQTT-Topic gibt es eine Status-Zeile mii den Werten IP-Adresse, Panel-Version, aktueller DimMode, Filter-Key der Wetterdarstellung, notify-Warn-Nachricht, Data-Version (intern) 
+  
 ### Weatherforecast
 
-Die Anzeige der Wetterinformationen erfolgt auf dem Display im Screensaver unter der Datumsangabe. Der untere Bereich ist aufgeteilt in 5 Blöcke. Der erste Block zeigt ein großes Symbol und eine Textzeile unter dem Sysmbol an, die Blöcke 2-5 bestehen aus einer Textzeile als Überschrift, unter der Überschrift folgt das Symbol, abschließend eine weitere Textzeile.
+Die Anzeige der Wetterinformationen erfolgt auf dem Display im Screensaver unter der Datumsangabe. Der untere Bereich ist aufgeteilt in 5 Blöcke. Der erste Block zeigt ein großes Symbol und eine Textzeile unter dem Sysmbol an, die Blöcke 2-5 bestehen aus einer Textzeile als Überschrift, unter der Überschrift folgt das Symbol, abschließend eine weitere Textzeile. Der alternative Screensaver stellt insgesamt 15 Blöcke dar. 
 
 Aktiviert werden kann der Wetterbericht über den Switch `weatherforecast`. Der Switch `notify` hat eine höhere Priorität, ist er eingeschaltet, wird die Wettervorhersage nicht angezeigt.
 
 Die Konfiguration der Wettervorherge orientiert sich am Modul OpenWeatherMap von Ch. Damsky, Danke an dieser Stelle für das Modul.
+
+Die Liste `Symbolzuordnung` weist dem Wetter Api-Codes ein Icon und eine Farbe zu. Die Liste ist weitestgehend selbsterklärend. Der WetterApiCode wird von der nachfolgend erklärten Wetter-Anzeige genutzt.
 
 Über die Tabelle `Wetter-Anzeige` können die anzuzeigenden Infos zugeordnet werden. Der erste Eintrag repräsentiert das linke Symbol auf dem Display, der zweite das folgende Symbol u.s.w.
 
@@ -374,16 +388,76 @@ Zur Berechnung der oberen Zeile wird `substr` genutzt. Eine positive Zahl starte
 
 Beispiel am Modul OpenWeatherMap
 
-Symbol-ID                 | obere Zeile                   | von Zeichen | Länge | untere Zeile           | Hinweis
-------------------------- | ----------------------------- | ----------- | ----- | ---------------------- | -------------------------------- 
-Wetterbedingung-Symbol    | Kein(e)                       | 0           | 99    | Temperatur             | (der erste Block zeigt keine obere Zeile an, somit kann oberer Zeile/ von / Länge auf dem Standard  stehen bleiben)
-Wetterbedingung-Symbol #1 | Beginn Vorhersage-Zeitraum #1 | -8          | 5     | maximale Temperatur #1 | Beginn Vorhersage-Zeitraum #1 enthält 31.12.2023, 16:00:00, von Ende 8 Zeichen rückwärts, dann 5 Zeichen ergibt 16:00, Achtung der Wert wird unformatiert ausgelesen
-Wetterbedingung-Symbol #2 | Beginn Vorhersage-Zeitraum #2 | -8          | 5     | maximale Temperatur #1 | Beginn Vorhersage-Zeitraum #1 enthält 31.12.2023, 16:00:00, vom Ende 8 Zeichen rückwärts, dann 5 Zeichen abzählen ergibt 16:00, Achtung der Wert wird unformatiert ausgelesen
+Position | Key | Symbol-ID                 | obere Zeile                   | von Zeichen | Länge | untere Zeile           | Hinweis
+---------|-----|------------------------- | ----------------------------- | ----------- | ----- | ---------------------- | -------------------------------- 
+1||Wetterbedingung-Symbol    | Kein(e)                       | 0           | 99    | Temperatur             | (der erste Block zeigt keine obere Zeile an, somit kann oberer Zeile/ von / ||||Länge auf dem Standard  stehen bleiben)
+2||Wetterbedingung-Symbol #1 | Beginn Vorhersage-Zeitraum #1 | -8          | 5     | maximale Temperatur #1 | Beginn Vorhersage-Zeitraum #1 enthält 31.12.2023, 16:00:00, von Ende 8 Zeichen rückwärts, dann 5 Zeichen ergibt 16:00, Achtung der Wert wird unformatiert ausgelesen
+3||Wetterbedingung-Symbol #2 | Beginn Vorhersage-Zeitraum #2 | -8          | 5     | maximale Temperatur #1 | Beginn Vorhersage-Zeitraum #1 enthält 31.12.2023, 16:00:00, vom Ende 8 Zeichen rückwärts, dann 5 Zeichen abzählen ergibt 16:00, Achtung der Wert wird unformatiert ausgelesen
 
-Die Variable Wetterbedingung enthält ein Kürzel für das entsprechende Symbol. Die Zuweisung der Symbole erfolgt über die Tabelle Symbol-Zuordnung.
+Die Spalte Position bezieht sich auf das darzustellende Icon , Position 1: Icon an Position 1, Position 2: Icon an Position 2, us.w.  Über die Spalte Key kann gefiltert werden.
+Standardmässig werden nur Einträge ohne eingetragenen Key auf dem Screensaver dargestellt, wird über die Funktion DB_NSP_SetWeatherFilterKey ein Key gesetzt erfolgt die Darstellung aller Icons ohne Key und mit dem entsprechenden gesetzten Key.
 
-### 5. Statusvariablen und Profile
+Sind mehrer identiche Postionen gesetzt, wir immer der letzte Eintrag genutzt.
+Beispiel:
 
+Pos | Key | ....
+----|-----|-----
+1 |  | ---
+1 | Berlin | ---
+2 |  | ---
+3 |  | ---
+4 |  | ---
+4 | Berlin  | ---
+5 |  | ---
+
+Ohne gesetzen Key wird 1, 2, 3, 4, 5 auf den Screensaver angezeigt. Mit dem Key 'Berlin' `DB_NSP_SetWeatherFilterKey(12345,'Berlin')` erfolgt die Anzeige von 1 Berlin, 2, 3, 4 Berlin 5
+
+
+Die Variable Wetterbedingung enthält ein Kürzel für das entsprechende Symbol. Die Zuweisung der Symbole erfolgt über die Tabelle Symbol-Zuordnung. 
+
+### 5. Funktionen
+
+#### DBNSP_ActivateDimModeTimer
+
+DBNSP_ActivateDimModeTimer(\<InstanceID\>) 
+Startet den unter `DimMode after Screensaver Timeout` eingestellten Timer neu
+
+#### DBNSP_RefreshDate
+
+DBNSP_RefreshDate(\<InstanceID\>)
+Sendet Zeit und Datum erneut an das Display. Dies erledigt das Module normalerweise eigenständig, üblicherweise immer zur vollen Minute.
+
+#### DBNSP_SetColorSchema
+
+DBNSP_SetColorSchema(\<InstanceID\>,\<String\> 'Schemaname')
+Setzt das Farbeschma auf 'Schemaname'
+
+#### DBNSP_SetDimMode
+
+DBNSP_SetDimMode(\<InstanceID\>,\<0|1|2|3\>)
+Setzt den DimMode auf den gewünschten Wert
+
+#### DBNSP_SetNotifyWarn
+
+DBNSP_SetNotifyWarn(\<InstanceID\>,\<String\> 'Warnmeldung Zeile 1',\<String\> 'Warnmeldung Zeile 2', <int> Farbe Zeile 1 , <int> Farbe Zeile 2)
+
+Setzt den NotifyWarnString mit Textinhalt und Farbe
+DB_NSP_SetNotifyWarn(12345,'Fenster offen','Schlafzimmer',123456,234567)
+Setzen den Text des Panels mit der ID 12345 auf 
+* Fenster offen 
+* Schlafzimmer
+
+#### DB_NSP_SetWeatherFilterKey
+
+DB_NSP_SetWeatherFilterKey(\<InstanceID\>,\<String\> 'Filterkey')
+
+Stellt den Filterkey auf den gewünschten Wert ein. der Filterkey wird gescpiechert und beim Neustrt des Panels wieder angewendet.
+
+#### DBNSP_listRegisteredVar
+
+DBNSP_listRegisteredVar(\<InstanceID\>)
+
+Listet die aktuell registrierten Variablen zur Aktualisierung der Displayanzeige im Log-File auf (nur zu Debugging-Zwecken)
 
 #### Statusvariablen
 
