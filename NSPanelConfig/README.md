@@ -374,7 +374,7 @@ Aktiviert werden kann der Wetterbericht über den Switch `weatherforecast`. Der 
 
 Die Konfiguration der Wettervorherge orientiert sich am Modul OpenWeatherMap von Ch. Damsky, Danke an dieser Stelle für das Modul.
 
-Die Liste `Symbolzuordnung` weist dem Wetter Api-Codes ein Icon und eine Farbe zu. Die Liste ist weitestgehend selbsterklärend. Der WetterApiCode wird von der nachfolgend erklärten Wetter-Anzeige genutzt.
+Die Liste `Symbolzuordnung` weist dem Wetter Api-Codes ein Icon und eine Farbe zu. Die Liste ist weitestgehend selbsterklärend. Der WetterApiCode wird von der nachfolgend erklärten Wetter-Anzeige genutzt. Dank an dieser Stellen an habre für die Umrechnungsfunktion RGB555 auf RGB888.
 
 Über die Tabelle `Wetter-Anzeige` können die anzuzeigenden Infos zugeordnet werden. Der erste Eintrag repräsentiert das linke Symbol auf dem Display, der zweite das folgende Symbol u.s.w.
 
@@ -441,11 +441,15 @@ Setzt den DimMode auf den gewünschten Wert
 
 DBNSP_SetNotifyWarn(\<InstanceID\>,\<String\> 'Warnmeldung Zeile 1',\<String\> 'Warnmeldung Zeile 2', <int> Farbe Zeile 1 , <int> Farbe Zeile 2)
 
-Setzt den NotifyWarnString mit Textinhalt und Farbe
+Setzt den NotifyWarnString mit Textinhalt und Farbe, die Farbangaben erfolgen in RGB888.
 DB_NSP_SetNotifyWarn(12345,'Fenster offen','Schlafzimmer',123456,234567)
 Setzen den Text des Panels mit der ID 12345 auf 
 * Fenster offen 
 * Schlafzimmer
+
+Das Zurücksetzen der Warnmeldung erfolgt mit leeren Strings:
+DB_NSP_SetNotifyWarn(12345,'','',0,0)
+
 
 #### DB_NSP_SetWeatherFilterKey
 
