@@ -210,7 +210,6 @@ require_once __DIR__ . '/icon-mapping.php';
 
 				if (IPS_SetProperty($this->InstanceID,'Version',1) && IPS_SetProperty($this->InstanceID,'sc_weatherforecast',json_encode($weatherforecast))) {
 					IPS_ApplyChanges($this->InstanceID);
-					$this->LogMessage('add position-numbers to weatherforecast, V1',KL_NOTIFY);
 				};
 			}
 
@@ -218,10 +217,8 @@ require_once __DIR__ . '/icon-mapping.php';
 			if ($this->ReadPropertyInteger('Version')==1) {
 				# Werte für color-picker in Property sc_wc_assignIcons eintragen, NSPANEl erwartet RGB 565, ColorPicker liefert RGB888
 				$icons = json_decode($this->ReadPropertyString('sc_wc_assignIcons'),true);
-				$this->LogMessage($this->ReadPropertyString('sc_wc_assignIcons'),KL_NOTIFY);
 				foreach ($icons as $key => $value) {
 					if (!array_key_exists('iconColor888',$value)) {
-						$this->LogMessage("DBG1".$key.'--'.$value['assignment'],KL_NOTIFY);
 						if (array_key_exists('iconColor',$value)) {
 							$icons[$key]['iconColor888']=$this->convertRGB565to888($value['iconColor']);
 						} else {
@@ -240,12 +237,6 @@ require_once __DIR__ . '/icon-mapping.php';
 				};
 				
 			}			
-
-			$this->LogMessage($this->ReadPropertyString('sc_wc_assignIcons'),KL_NOTIFY);
-
-
-
-
 
 			// Werte speichern
 			$this->WriteAttributeString('panelPage',json_encode($panelPageDst));
@@ -281,7 +272,6 @@ require_once __DIR__ . '/icon-mapping.php';
 			# Timer-ID des Timers Refresh ermitteln
 			foreach (IPS_GetTimerList() as $timer) {
 				if ((IPS_GetTimer($timer)['InstanceID'] == $this->InstanceID) && (IPS_GetTimer($timer)['Name'] == 'Refresh') ) {
-					$this->LogMessage("id from timer Refresh: $timer",KL_NOTIFY);
 					$this->WriteAttributeInteger('RefreshID',$timer);
 				  
 				}
@@ -349,7 +339,7 @@ require_once __DIR__ . '/icon-mapping.php';
 		}
 
 		function SetColorSchema(string $schema) {
-			$this->LogMessage('FarbSchema:'.$schema,KL_NOTIFY);
+			$this->LogMessage('set color scheme: '.$schema,KL_NOTIFY);
 			$foundSchema=false;
 			foreach(json_decode($this->ReadPropertyString('sc_color'),true) as $key => $value) {
 				if ($value['schema'] == $schema) {
@@ -398,25 +388,18 @@ require_once __DIR__ . '/icon-mapping.php';
 			$target = json_decode($this->ReadAttributeString('registerVariable'),true); // Soll-Zustand  RegisterMessage
 			$current = $this->GetMessageList (); // Ist-Zustand RegisterMessage
 
-
-			$this->LogMessage('target:'.print_r($target,true),KL_NOTIFY);
-			$this->LogMessage('current:'.print_r($current,true),KL_NOTIFY);
-
 			# Object-Id's für die Heading und Notify-Zeile des Screensavers
 			# wenn register = false, dann ist der screensaver aktiv.
 			if (!$register) {
 				if ($this->ReadPropertyBoolean('sc_notifyActive') && sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true)) == 0) { # Wenn der Screensaver aktiv ist,  Var für notify registrieren, wenn kein notifyWarn gesetzt ist
 					if ($this->ReadPropertyInteger('sc_notifyHeading') > 1) {
 						$target[$this->ReadPropertyInteger('sc_notifyHeading')]=0;
-						#array_push($target,$this->ReadPropertyInteger('sc_notifyHeading'));
 					}
 					if ($this->ReadPropertyInteger('sc_notifyText') > 1) {
 						$target[$this->ReadPropertyInteger('sc_notifyText')]=0;
-						#array_push($target,$this->ReadPropertyInteger('sc_notifyText'));
 					}
 				}
 			}
-			$this->LogMessage('target after:'.print_r($target,true),KL_NOTIFY);
 
 			if ($debug) {
 				$this->LogMessage('object-id to register:'. implode(', ',array_keys($target)),KL_NOTIFY);
@@ -461,7 +444,6 @@ require_once __DIR__ . '/icon-mapping.php';
 					$this->Send($this->ReadPropertyString('sc_dimModeWarn'));
 					break;
 				case 0:
-					$this->LogMessage('case0',KL_MESSAGE);
 					$this->Send($this->ReadPropertyString('sc_dimMode'));
 					break;
 				case 1:
@@ -500,7 +482,6 @@ require_once __DIR__ . '/icon-mapping.php';
 					if ($this->ReadPropertyBoolean('sc_powersafeTime_active') && ($this->ReadPropertyInteger('sc_powersafeTime') > 0 )) {
 						$this->LogMessage('start DimModeTimer: '.$this->ReadPropertyInteger('sc_powersafeTime').' sec.',KL_NOTIFY);
 						$this->SetTimerInterval('sc_powersafe',1000*$this->ReadPropertyInteger('sc_powersafeTime'));
-						$this->LogMessage('DBGTimer'.(1000*$this->ReadPropertyInteger('sc_powersafeTime')),KL_NOTIFY);
 						if (!empty($this->ReadPropertyString('sc_dimMode'))) {
 							$this->sendMqtt_CustomSend(array($this->ReadPropertyString('sc_dimMode')));
 						}
@@ -516,7 +497,7 @@ require_once __DIR__ . '/icon-mapping.php';
 		}
 
 		public function RequestAction($Ident, $Value) {
-			$this->LogMessage('RequestAction:'.$Ident.' - '.$Value,KL_NOTIFY);
+			#$this->LogMessage('RequestAction:'.$Ident.' - '.$Value,KL_NOTIFY);
 			switch ($Ident) {
 				case "Power1":
 					$this->SetValue("Power1",$Value);
@@ -542,9 +523,6 @@ require_once __DIR__ . '/icon-mapping.php';
 					break;
 				case "RefreshDate":
 					$this->RefreshDate($Value);
-					break;
-				case "SetNotifyWarn":
-					$this->LogMessage('SetNotifyWarn'.$Value,KL_NOTIFY);
 					break;
 				case "Send":
 					$this->Send($Value);
@@ -588,7 +566,6 @@ require_once __DIR__ . '/icon-mapping.php';
 					$this->SwapModuleStatus();
 					break;
 				case "setIconColor":
-					$this->LogMessage('colorPicker'.$Value,KL_NOTIFY);
 					$this->UpdateFormField("iconColor", "value", $this->convertRGB888to565($Value));
 					break;
 				case "sc_powersafe":
@@ -685,14 +662,11 @@ require_once __DIR__ . '/icon-mapping.php';
 
 
 		private function genScreenSaverCmd ($searchKey) {
-			$start=microtime(true);
-
 			# Liste mit darstellbaren Icons zusammenstellen
 			if ($this->ReadPropertyInteger('sc') == 1 ) {
 				$maxNspEntries=6;
 				$lineOne=array(2,3,4,5);
 				$lineTwo=array(1,2,3,4,5,6);
-				$this->LogMessage('DBG'.$this->ReadAttributeString('sc_notifyWarn'),KL_NOTIFY);
 				if ($this->ReadPropertyBoolean('sc_notifyActive') || sizeof(json_decode($this->ReadAttributeString('sc_notifyWarn'),true)) > 0) {
 					$showIcon=array();
 				} else {
@@ -711,12 +685,10 @@ require_once __DIR__ . '/icon-mapping.php';
 
 			# load icons
 			$weatherIcons = json_decode($this->ReadPropertyString('sc_wc_assignIcons'),true);
-			#$this->LogMessage('color:_'.$this->ReadPropertyString('sc_wc_assignIcons'),KL_NOTIFY);
 			$iconAssignment = array();
 			foreach ($weatherIcons as $element)  {
 				$iconAssignment[$element['assignment']]['icon'] = $this->icons[$element['icon']];
 				$iconAssignment[$element['assignment']]['color'] = $element['iconColor'];
-				#$this->LogMessage($element['assignment'].' Color '.$element['HexColorEigenschaft'],KL_NOTIFY);
 			}
 			# create weatherupdate-array
 			$weatherForecast = json_decode($this->ReadPropertyString('sc_weatherforecast'),true);
@@ -736,7 +708,6 @@ require_once __DIR__ . '/icon-mapping.php';
 			}
 			# union arrays with key entries
 			if (!empty($searchKey)) {
-				#$this->LogMessage("searchkey: $searchKey",KL_NOTIFY);
 				if (array_key_exists($searchKey,$sort)) {
 					foreach(array_intersect_key($sort[$searchKey],$default) as $key => $value) {
 						$default[$key]=$value;
@@ -745,13 +716,12 @@ require_once __DIR__ . '/icon-mapping.php';
 						$default[$key]=$value;
 					  }
 				}
-				#$this->LogMessage(print_r($default,true),KL_NOTIFY);
 			}
 		
 			for ($i=1; $i<=$maxNspEntries; $i++) {
 				if (in_array($i,$showIcon) && array_key_exists($i,$default)) {
 					$indexKey=$default[$i];
-					if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("create icon postion $i index $indexKey",KL_NOTIFY);
+					#if ($this->ReadPropertyBoolean("PropertyVariableDebug")) $this->LogMessage("create icon postion $i index $indexKey",KL_NOTIFY);
 					# type intNameEntity: ignored
 					array_push($weatherOutput,'',''); 
 					# icon iconColor
@@ -773,15 +743,10 @@ require_once __DIR__ . '/icon-mapping.php';
 					if (in_array($i,$lineOne)) {
 						if ($weatherForecast[$indexKey]['caption']>1 && IPS_VariableExists($weatherForecast[$indexKey]['caption'])) {
 							if ($weatherForecast[$indexKey]['captionFrom'] !== '' && $weatherForecast[$indexKey]['captionLength'] !== '' ) {
-								#$this->LogMessage("-1- ".$weatherForecast[$i]['captionFrom'].' '.$weatherForecast[$i]['captionLength'],KL_NOTIFY);
-								#$this->LogMessage(GetValueFormatted($weatherForecast[$i]['caption']),KL_NOTIFY);
-								#$this->LogMessage(substr(GetValueFormatted($weatherForecast[$i]['caption']),$weatherForecast[$i]['captionFrom'],$weatherForecast[$i]['captionLength']),KL_NOTIFY);
 								$weatherOutput[] = substr(GetValueFormatted($weatherForecast[$indexKey]['caption']),$weatherForecast[$indexKey]['captionFrom'],$weatherForecast[$indexKey]['captionLength']);
 							} elseif ($weatherForecast[$indexKey]['captionFrom'] !== '') {
-								#$this->LogMessage("-2- ".$weatherForecast[$i]['captionFrom'].' '.$weatherForecast[$i]['captionLength'],KL_NOTIFY);
 								$weatherOutput[] = substr(GetValueFormatted($weatherForecast[$indexKey]['caption']),$weatherForecast[$indexKey]['captionFrom']);
 							} elseif ($weatherForecast[$i]['captionLength'] !== '') {
-								#$this->LogMessage("-3- ".$weatherForecast[$i]['captionFrom'].' '.$weatherForecast[$i]['captionLength'],KL_NOTIFY);
 								$weatherOutput[] = substr(GetValueFormatted($weatherForecast[$indexKey]['caption']),$weatherForecast[$indexKey]['captionLength']);								
 							}
 						} else {
@@ -805,96 +770,21 @@ require_once __DIR__ . '/icon-mapping.php';
 					array_push($weatherOutput,'','','','','','');
 				}
 			}
-		$stop=microtime(true);
-
-		$this->LogMessage('Time: '.($stop-$start),KL_ERROR);
 		return(implode('~',$weatherOutput));
 		}
 
 
 		function RefreshDate (bool $active) {
-//			$id=$this->InstanceID;
 			if ($active) { # nächsten Refreshzeitpunkt
 				$this->SetTimerInterval("Refresh",(60-date("s",time()))*1000);
 				$now_time = date("H:i", time());
 				$now_date = strftime("%A %d. %b %Y", time());
 				$this->sendMqtt_CustomSend(array("time~$now_time","date~$now_date"));
+
 				# Weatherforecast active?
-// 				if (0 && $this->ReadPropertyBoolean('sc_weatherActive')) {
-// 					$this->genScreenSaverCmd('');
-// 					#$this->LogMessage('sc_wc_assignIcons:'.$this->ReadPropertyString('sc_wc_assignIcons'),KL_NOTIFY);
-// 					#$this->LogMessage('sc_weatherforecast:'.$this->ReadPropertyString('sc_weatherforecast'),KL_NOTIFY);
-// 					$weatherIcons = json_decode($this->ReadPropertyString('sc_wc_assignIcons'),true);
-// 					$iconAssignment = array();
-// 					foreach ($weatherIcons as $element)  {
-// 						$iconAssignment[$element['assignment']]['icon'] = $this->icons[$element['icon']];
-// 						$iconAssignment[$element['assignment']]['color'] = $element['iconColor'];
-
-// 					}
-// 					#foreach ($iconAssignment as $e => $v) {
-// 					#	$this->LogMessage('#1#:'.$e.':'.$v['icon'].'-'.$v['color'],KL_NOTIFY);
-// 					#}
-// 					$weatherForecast = json_decode($this->ReadPropertyString('sc_weatherforecast'),true);
-// 					$weatherOutput = array('weatherUpdate');
-// 					$this->LogMessage($this->ReadPropertyString('sc_weatherforecast'),KL_ERROR);
-
-
-// 					foreach ($weatherForecast as $element) {
-// 						$this->LogMessage(implode('#',$element),KL_NOTIFY);
-// 						#foreach ($element as $key => $value) {
-// 						#	$this->LogMessage('-- key '.$key.' value: '.$value,KL_NOTIFY);
-// 						#}
-// #						if (array_key_exists(GetValue($element['objectIdValueSymbol']),$weatherIcons)
-// 						$weatherOutput[] = '';
-// 						$weatherOutput[] = '';
-// 						# Wettersymbol
-// 						if ($element['objectIdValueSymbol']>1) {
-// 							if (array_key_exists(GetValue($element['objectIdValueSymbol']),$iconAssignment)) {
-// 								$weatherOutput[] = $iconAssignment[GetValue($element['objectIdValueSymbol'])]['icon'];
-// 								$weatherOutput[] = $iconAssignment[GetValue($element['objectIdValueSymbol'])]['color'];
-// 							} else {
-// 								$this->LogMessage('weather-symbol '.GetValue($element['objectIdValueSymbol']).' not defined in screensaver settings',KL_NOTIFY);
-// 								$weatherOutput[] = 'X';
-// 								$weatherOutput[] = 63488;
-// 							}
-// 						} else {
-// 							$weatherOutput[] = '';
-// 							$weatherOutput[] = 0;
-// 						}
-// 						# Beschriftung 
-// 						if ($element['caption']>1) {
-// 							if ($element['captionFrom'] !== '' && $element['captionLength'] !== '' ) {
-// 								#$this->LogMessage("-1- ".$element['captionFrom'].' '.$element['captionLength'],KL_NOTIFY);
-// 								#$this->LogMessage(GetValueFormatted($element['caption']),KL_NOTIFY);
-// 								#$this->LogMessage(substr(GetValueFormatted($element['caption']),$element['captionFrom'],$element['captionLength']),KL_NOTIFY);
-// 								$weatherOutput[] = substr(GetValueFormatted($element['caption']),$element['captionFrom'],$element['captionLength']);
-// 							} elseif ($element['captionFrom'] !== '') {
-// 								#$this->LogMessage("-2- ".$element['captionFrom'].' '.$element['captionLength'],KL_NOTIFY);
-// 								$weatherOutput[] = substr(GetValueFormatted($element['caption']),$element['captionFrom']);
-// 							} elseif ($element['captionLength'] !== '') {
-// 								#$this->LogMessage("-3- ".$element['captionFrom'].' '.$element['captionLength'],KL_NOTIFY);
-// 								$weatherOutput[] = substr(GetValueFormatted($element['caption']),$element['captionLength']);								
-// 							}
-// 						} else {
-// 							$weatherOutput[] = '';
-// 						}
-// 						if (IPS_VariableExists($element['objectIdValue'])) {
-// 							$weatherOutput[] = GetValueFormatted($element['objectIdValue']);
-// 						} else {
-// 							$this->LogMessage('weather, display options: variable '.$element['objectIdValue']. ' does not exist',KL_ERROR);
-// 						}
-
-// 						#$this->LogMessage('##'.implode('~',$weatherOutput),KL_NOTIFY);
-
-
-// 					}
-
-// 				}
 				if ($this->ReadPropertyBoolean('sc_weatherActive')) {
 					$this->sendMqtt_CustomSend(array($this->genScreenSaverCmd($this->ReadAttributeString('sc_weatherKey'))));
 				}
-
-
 			} else { # Refresh abschalten
 				$this->SetTimerInterval("Refresh",0);
 			}
@@ -965,7 +855,6 @@ require_once __DIR__ . '/icon-mapping.php';
 			$notify='';
 			$color='';
 
-			$this->LogMessage('DBG:generateNotifyString',KL_NOTIFY);
 			$notifyWarnMsg=json_decode($this->ReadAttributeString('sc_notifyWarn'),true);
 
  			if (sizeof($notifyWarnMsg)==0 && $this->ReadPropertyBoolean('sc_notifyActive')) {
@@ -977,8 +866,6 @@ require_once __DIR__ . '/icon-mapping.php';
 				if (array_key_exists(1,$notifyWarnMsg)) $notify = $notifyWarnMsg[1]; 
 				$color=$this->ReadAttributeString('sc_notifyWarnColor_565');
 			}
-			$this->LogMessage('notify:'.$this->ReadPropertyInteger('sc_notifyHeadingColor'),KL_NOTIFY);
-			$this->LogMessage('color:'.$this->ReadAttributeString('sc_notifyColor_565'),KL_NOTIFY);
 			return 'notify~'.$heading.'~'.$notify.'~'.$color;
 		}
 
@@ -1002,7 +889,6 @@ require_once __DIR__ . '/icon-mapping.php';
 					$values[0]["id$columnNumber"] = "$element";
 					$columnNumber++;
 				}
-				//$this->LogMessage('Select: '.json_encode($entry),KL_NOTIFY);
 				$this->UpdateFormField("showPageColumns", "columns", json_encode($entry));
 				$this->UpdateFormField("showPageColumns", "values", json_encode($values));
 			}
@@ -1014,11 +900,9 @@ require_once __DIR__ . '/icon-mapping.php';
 			foreach (IPS_GetChildrenIDs($this->InstanceID) as $id) {
 				$name[(IPS_GetObject($id))['ObjectIdent']]=$id;
 			}
-			//$this->LogMessage('Keys: '.implode('-',array_keys($name)),KL_NOTIFY);
 			$cnt=0;
 
 			while (array_key_exists($save_name."pages$cnt",$name) || array_key_exists($save_name."assignment$cnt",$name)) {
-				#$this->LogMessage("Loop $cnt",KL_NOTIFY);
 				$cnt++;
 			}
 			$this->LogMessage("Save configuration to $save_name $cnt",KL_NOTIFY);
@@ -1052,24 +936,7 @@ require_once __DIR__ . '/icon-mapping.php';
 			}
 		}
 
-
-		// function LoadPageColumns(string $panelKey) {
-		// 	$this->LogMessage("load Values into configurator for Page $panelKey",KL_NOTIFY);
-		// 	$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
-		// 	$columnNumber=0;
-		// 	$entry=array();
-		// 	foreach (explode('~',$panelPage[$panelKey]['payload'][1]) as $pageEntryColum => $pageEntryElement) {
-		// 		$entry[$columnNumber]['caption'] = "($pageEntryColum) $pageEntryElement";
-		// 		$entry[$columnNumber]['value'] = "$pageEntryColum";
-		// 		$columnNumber++;
-		// 	}
-		// 	$this->LogMessage("load Entry ".json_encode($entry),KL_NOTIFY);
-		// 	$this->UpdateFormField("resultField", "options", json_encode($entry));
-		// 	$this->UpdateFormField("objectId", "options", json_encode($entry));
-		// }
-
 		private function PanelActionToggle(bool $toggle) {
-			//$this->LogMessage('PanelActionToggle',KL_NOTIFY);
 			if ($toggle) {
 				$this->UpdateFormField("value", "enabled", false);
 				$this->UpdateFormField("maxstep", "enabled", false);
@@ -1080,7 +947,6 @@ require_once __DIR__ . '/icon-mapping.php';
 		}
 
 		private function PanelActionReset(string $info) {
-			//$this->LogMessage($info,KL_NOTIFY);
 			$this->UpdateFormField("value", "enabled", true);
 			$this->UpdateFormField("maxstep", "enabled", true);
 		}
@@ -1107,7 +973,6 @@ require_once __DIR__ . '/icon-mapping.php';
 			$panelPage = json_decode($this->ReadAttributeString("panelPage"),true);
 			# Wenn das array leer ist, kann keine Berechnung durchgeführt werden, unconfigured an das Panel senden
 			if (count($panelPage) == 0)	{
-				#$this->sendMqtt_CustomSend(array('pageType~cardEntities','entityUpd~unconfigured~'));
 				return array('pageType~cardEntities','entityUpd~unconfigured~');
 			}
 			# Array für die Seitenzahlen der aktuellen Ebene anlegen
@@ -1147,7 +1012,7 @@ require_once __DIR__ . '/icon-mapping.php';
 				$currentPage = $this->ReadAttributeInteger('currentPage');
 				# Wenn Seite nicht vorhanden, auf erste Seite setzen
 				if (!array_key_exists($currentPage,$panelPage)) {
-					if ($debug) $this->LogMessage("Page $currentPage doesen't exist",KL_NOTIFY);
+					if ($debug) $this->LogMessage("Page $currentPage doesen't exist",KL_ERROR);
 					$currentPage = key($panelPage);
 				}
 				# submenu aufbauen
@@ -1383,7 +1248,7 @@ require_once __DIR__ . '/icon-mapping.php';
 									IPS_RunScriptEx($panelAction[$result[1]][$doAction]['id'],array('value' => $result[3]));
 								}
 							} else {
-								$this->LogMessage('script '.$panelAction[$result[1]][$doAction]['id'].'F doesnt exist',KL_ERROR);
+								$this->LogMessage('script '.$panelAction[$result[1]][$doAction]['id'].' doesnt exist',KL_ERROR);
 							}
 						} elseif ($panelAction[$result[1]][$doAction]['action'] == 4 ) {  # SetVariable
 							if ($debug) $this->LogMessage('set variable '.$panelAction[$result[1]][$doAction]['id'],KL_NOTIFY);
@@ -1623,7 +1488,6 @@ require_once __DIR__ . '/icon-mapping.php';
 								# Fibaro up 4, close 0, stop 2
 							
 								if (preg_match('/event,buttonPress2,(\d*),([^,]*),*([(yes|no)\d]*)/', $payload['CustomRecv'],$result) ) {
-									#$this->LogMessage('R:'.implode('--',$result),KL_NOTIFY);
 									$this->doPanelAction(array('',intval($result[1]),$result[2],$result[3]));
 								}
 							}
@@ -1655,7 +1519,6 @@ require_once __DIR__ . '/icon-mapping.php';
 								$this->doPanelAction(array('','Button2','Action',$payload['Button2']['Action']));
 							}
 						}
-						#$this->LogMessage('stat/RESULT/'.$data['Payload'],KL_NOTIFY);
 						break;
 				}				
 			}
@@ -1671,7 +1534,6 @@ require_once __DIR__ . '/icon-mapping.php';
 			# Bereich elements
 
 			reset($panelPage);
-			#$this->LogMessage(print_r($Form['elements'],true),KL_NOTIFY);
 			foreach ($Form['elements'] as $keyLayer0 => $elementLayer0) {
 
 				# Screensaver 
@@ -1741,7 +1603,6 @@ require_once __DIR__ . '/icon-mapping.php';
 
 					if ($elementLayer1 === 'RowLayout') {
 						foreach ($Form['elements'][$keyLayer0]['items'] as $keyLayer2 => $elementLayer2) {
-							#$this->LogMessage('keylayer2 '.$keyLayer2,KL_NOTIFY);
 							foreach ($Form['elements'][$keyLayer0]['items'][$keyLayer2] as $keyLayer3 => $elementLayer3) {
 								if ($elementLayer3 === 'PanelIp') {
 									$Form['elements'][$keyLayer0]['items'][$keyLayer2]['value'] = $this->ReadAttributeString('PanelIp');
@@ -1862,10 +1723,6 @@ require_once __DIR__ . '/icon-mapping.php';
 					$Form['actions'][$key]['value']=$this->ReadAttributeBoolean("Activated");
 				}
 			}
-
-#						$this->LogMessage(print_r($Form),KL_NOTIFY);
-
-
 			return json_encode($Form);
 
 		}
